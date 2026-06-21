@@ -10,10 +10,13 @@ from app.api.v1.endpoints.ask import router as ask_router
 from app.api.v1.endpoints.complaints import router as complaints_router
 from app.api.v1.endpoints.drives import router as drives_router
 from app.api.v1.endpoints.auth import router as auth_router
+from app.domain.whatsapp_service import router as whatsapp_router
+from app.api.v1.endpoints.volunteers import router as volunteers_router
 from app.api.v1.endpoints.broadcasts import router as broadcasts_router
 from app.api.v1.endpoints.dashboard import router as dashboard_router
 from app.domain.services.seed_graph import seed
 from app.domain.models.user import User  # noqa: F401 – ensure table is registered
+from app.domain.models.volunteer import Volunteer, Task, ConversationState  # noqa: F401 – ensure tables are registered
 from app.domain.models.hierarchy import HierarchyNode  # noqa: F401
 from app.infrastructure.db.sqlite_client import init_db
 from app.infrastructure.db.neo4j_client import neo4j_client
@@ -128,6 +131,8 @@ app.include_router(admin_router, prefix="/api/v1/admin", tags=["Admin"])
 app.include_router(ask_router, prefix="/api/v1", tags=["Ask"])
 app.include_router(complaints_router, prefix="/api/v1/complaints", tags=["Complaints"])
 app.include_router(drives_router, prefix="/api/v1/drives", tags=["Drives"])
+app.include_router(whatsapp_router, prefix="/api/v1/whatsapp", tags=["WhatsApp"])
+app.include_router(volunteers_router, prefix="/api/v1", tags=["Volunteers"])
 app.include_router(broadcasts_router, prefix="/api/v1/broadcasts", tags=["Broadcasts"])
 app.include_router(dashboard_router, prefix="/api/v1", tags=["Dashboard"])
 
