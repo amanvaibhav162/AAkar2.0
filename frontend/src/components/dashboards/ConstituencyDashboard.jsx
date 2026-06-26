@@ -22,7 +22,7 @@ export default function ConstituencyDashboard({ tab, hierarchy }) {
       case 'hub':              return <Hub hierarchy={hierarchy} userRole="CONSTITUENCY_MGR" />;
       case 'broadcast':        return <BroadcastPanel hierarchy={hierarchy} />;
       case 'manage-users':     return <ManageUsers role="CONSTITUENCY_MGR" hierarchy={hierarchy} />;
-      case 'ai-suggestions':   return <AICopilot hierarchy={hierarchy} />;
+      case 'ai-suggestions':   return null;
       default:                 return <ConstituencyOverview lc={lc} hierarchy={hierarchy} />;
     }
   };
