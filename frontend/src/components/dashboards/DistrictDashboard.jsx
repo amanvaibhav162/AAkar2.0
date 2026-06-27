@@ -3,6 +3,19 @@ import HeatmapAnalysis from './HeatmapAnalysis';
 import BroadcastPanel from '../shared/BroadcastPanel';
 import ManageUsers from '../shared/ManageUsers';
 import Hub from '../shared/Hub';
+import dynamic from 'next/dynamic';
+
+const CampaignPanel = dynamic(() => import('../CampaignPanel'), {
+  ssr: false,
+  loading: () => (
+    <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', fontFamily: 'sans-serif' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+        <div style={{ width: '24px', height: '24px', border: '3px solid #e2e8f0', borderTopColor: '#0f172a', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+        <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Loading Campaign Engine...</span>
+      </div>
+    </div>
+  )
+});
 
 export default function DistrictDashboard({ tab, hierarchy }) {
   const district = hierarchy.district || '';
@@ -10,7 +23,7 @@ export default function DistrictDashboard({ tab, hierarchy }) {
     case 'overview':       return <DistrictOverview district={district} />;
     case 'constituencies': return <ConstituencyStats district={district} />;
     case 'heatmap':       return <HeatmapAnalysis level="DISTRICT" hierarchy={hierarchy} />;
-    case 'coverage':      return <HeatmapAnalysis level="DISTRICT" hierarchy={hierarchy} />;
+    case 'campaign':      return <CampaignPanel />;
     case 'issues':        return <LocalIssues />;
     case 'ai-suggestions': return null;
     case 'hub':           return <Hub hierarchy={hierarchy} userRole="DISTRICT_ADMIN" />;
@@ -24,7 +37,7 @@ function DistrictOverview({ district }) {
   const [stats, setStats] = useState(null);
   useEffect(() => {
     if (!district) return;
-    fetch(`/api/v1/dashboard/stats?level=district&code=${district}`, {
+    fetch(`/api/v1/dashboard/stats?level=district&code=${encodeURIComponent(district)}`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     }).then(async r => {
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -91,7 +104,7 @@ function ConstituencyStats({ district }) {
 
   useEffect(() => {
     if (!district) return;
-    fetch(`/api/v1/dashboard/district/constituencies?district_code=${district}`, {
+    fetch(`/api/v1/dashboard/district/constituencies?district_code=${encodeURIComponent(district)}`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     }).then(r => r.json())
       .then(data => { setConstituencies(data); setLoading(false); })
@@ -107,7 +120,7 @@ function ConstituencyStats({ district }) {
     if (!mandalCache[code]) {
       setMandalLoading(true);
       try {
-        const res = await fetch(`/api/v1/dashboard/mandals?constituency_code=${code}`, {
+        const res = await fetch(`/api/v1/dashboard/mandals?constituency_code=${encodeURIComponent(code)}`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         const data = await res.json();

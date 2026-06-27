@@ -5,6 +5,19 @@ import ManageUsers from '../shared/ManageUsers';
 import Hub from '../shared/Hub';
 import AICopilot from '../shared/AICopilot';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
+
+const CampaignPanel = dynamic(() => import('../CampaignPanel'), {
+  ssr: false,
+  loading: () => (
+    <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', fontFamily: 'sans-serif' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+        <div style={{ width: '24px', height: '24px', border: '3px solid #e2e8f0', borderTopColor: '#0f172a', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+        <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Loading Campaign Engine...</span>
+      </div>
+    </div>
+  )
+});
 
 export default function MandalDashboard({ tab, hierarchy }) {
   const mandal = hierarchy.mandal || '';
@@ -18,6 +31,7 @@ export default function MandalDashboard({ tab, hierarchy }) {
     switch (tab) {
       case 'overview':     return <MandalOverview mandal={mandal} onTabChange={handleTabChange} />;
       case 'booth_status': return <BoothStatusTable mandal={mandal} />;
+      case 'campaign':     return <CampaignPanel />;
       case 'manage-users': return <ManageUsers role="MANDAL_MGR" hierarchy={hierarchy} />;
       case 'hub':          return <Hub hierarchy={hierarchy} userRole="MANDAL_MGR" />;
       case 'volunteers':   return <VolunteerView mandal={mandal} onTabChange={handleTabChange} />;
@@ -58,7 +72,7 @@ function MandalOverview({ mandal, onTabChange }) {
   const handleResetData = async () => {
     if (!window.confirm("Are you sure you want to erase all ground data for this mandal? This cannot be undone.")) return;
     try {
-      const res = await fetch(`/api/v1/dashboard/mandal/reset?mandal_code=${mandal}`, {
+      const res = await fetch(`/api/v1/dashboard/mandal/reset?mandal_code=${encodeURIComponent(mandal)}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });

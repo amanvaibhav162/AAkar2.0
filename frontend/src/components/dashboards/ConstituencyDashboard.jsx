@@ -5,6 +5,19 @@ import BroadcastPanel from '../shared/BroadcastPanel';
 import ManageUsers from '../shared/ManageUsers';
 import Hub from '../shared/Hub';
 import AICopilot from '../shared/AICopilot';
+import dynamic from 'next/dynamic';
+
+const CampaignPanel = dynamic(() => import('../CampaignPanel'), {
+  ssr: false,
+  loading: () => (
+    <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', fontFamily: 'sans-serif' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+        <div style={{ width: '24px', height: '24px', border: '3px solid #e2e8f0', borderTopColor: '#0f172a', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+        <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Loading Campaign Engine...</span>
+      </div>
+    </div>
+  )
+});
 
 export default function ConstituencyDashboard({ tab, hierarchy }) {
   const lc = hierarchy.constituency || '';
@@ -19,6 +32,7 @@ export default function ConstituencyDashboard({ tab, hierarchy }) {
       case 'overview':         return <ConstituencyOverview lc={lc} hierarchy={hierarchy} />;
       case 'booths':           return <BoothStatusDirectory lc={lc} hierarchy={hierarchy} />;
       case 'heatmap':          return <HeatmapAnalysis level="CONSTITUENCY" hierarchy={hierarchy} />;
+      case 'campaign':         return <CampaignPanel />;
       case 'hub':              return <Hub hierarchy={hierarchy} userRole="CONSTITUENCY_MGR" />;
       case 'broadcast':        return <BroadcastPanel hierarchy={hierarchy} />;
       case 'manage-users':     return <ManageUsers role="CONSTITUENCY_MGR" hierarchy={hierarchy} />;
@@ -40,8 +54,8 @@ function ConstituencyOverview({ lc, hierarchy }) {
     const headers = { 'Authorization': `Bearer ${localStorage.getItem('token')}` };
     
     Promise.all([
-      fetch(`/api/v1/dashboard/stats?level=constituency&code=${lc}`, { headers }).then(r => r.json()),
-      fetch(`/api/v1/dashboard/mandals?constituency_code=${lc}`, { headers }).then(r => r.json())
+      fetch(`/api/v1/dashboard/stats?level=constituency&code=${encodeURIComponent(lc)}`, { headers }).then(r => r.json()),
+      fetch(`/api/v1/dashboard/mandals?constituency_code=${encodeURIComponent(lc)}`, { headers }).then(r => r.json())
     ]).then(([sData, mData]) => {
       setStats(sData);
       setMandals(mData);
@@ -136,7 +150,7 @@ function BoothStatusDirectory({ lc }) {
   React.useEffect(() => {
     if (!lc) return;
     const headers = { 'Authorization': `Bearer ${localStorage.getItem('token')}` };
-    fetch(`/api/v1/dashboard/constituency/booths?constituency_code=${lc}`, { headers })
+    fetch(`/api/v1/dashboard/constituency/booths?constituency_code=${encodeURIComponent(lc)}`, { headers })
       .then(r => r.json())
       .then(setBoothData)
       .catch(console.error)

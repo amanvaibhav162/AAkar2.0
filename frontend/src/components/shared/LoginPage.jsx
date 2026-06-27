@@ -106,7 +106,6 @@ export default function LoginPage() {
         if (e && e.preventDefault) e.preventDefault();
         setLoading(true);
         setError('');
-        
         const roleToEmail = {
             'ELECTION_ADMIN': 'serveradmin@aakar.gov.in',
             'STATE_ADMIN': 'statedelhi@aakar.gov.in',
@@ -116,17 +115,23 @@ export default function LoginPage() {
             'BOOTH_PRESIDENT': 'booth.ndcn-b1@aakar.gov.in',
             'cm': 'cm-delhi@aakar.gov.in',
             'dm': 'dm-newdelhi@aakar.gov.in',
-            'booth': 'booth.ndcn-b1@aakar.gov.in'
+            'booth': 'official-nd@aakar.gov.in'
         };
 
         const demoPassword = "123456";
-        const demoEmail = roleToEmail[userType] || `demo_${userType.toLowerCase()}@aakar.gov.in`;
+        const demoEmail = roleToEmail[userType];
         
+        if (!demoEmail) {
+            setError('No demo account configured for this role.');
+            setLoading(false);
+            return;
+        }
+
         try {
             await login(demoEmail, demoPassword);
             router.push('/');
         } catch (err) {
-            setError('Demo Session Initiation Failed: ' + err.message);
+            setError('Demo login failed. Make sure the database is seeded: ' + err.message);
         }
         setLoading(false);
     };
