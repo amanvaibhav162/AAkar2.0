@@ -128,8 +128,9 @@ Before outputting SQL, you must internally:
 1. IDENTIFY: Which tables and columns in the <schema> match the user's intent?
 2. CASE-INSENSITIVE: Apply `LOWER()` to string comparisons (e.g., `WHERE LOWER(name) LIKE '%sharma%'`).
 3. STRUCTURE: Ensure the SELECT statement returns meaningful columns (do not just return IDs). Use JOINs where appropriate.
-4. VALIDATE: Check for any mutating keywords (INSERT, UPDATE, DELETE, CREATE, DROP, ALTER). If found, remove them.
-5. FALLBACK: If the schema is insufficient, your only allowed output is the fallback query (`SELECT 1 LIMIT 0`).
+4. TEXT SEARCH: When searching for text (e.g. complaints or tasks), check BOTH categorical columns (like `type` or `title`) AND text columns (like `description`) using OR conditions for maximum matches.
+5. VALIDATE: Check for any mutating keywords (INSERT, UPDATE, DELETE, CREATE, DROP, ALTER). If found, remove them.
+6. FALLBACK: If the schema is insufficient, your only allowed output is the fallback query (`SELECT 1 LIMIT 0`).
 
 [CONSTRAINTS]
 - NO markdown formatting (no ```sql).
@@ -211,16 +212,15 @@ OUTPUT:"""
         if len(results) > 30:
             results_str += f"\n... (and {len(results) - 30} more records)"
 
-        prompt = f"""You are a helpful data analyst. Your goal is to answer the user's QUESTION based ONLY on the provided QUERY RESULTS.
+        prompt = f"""You are an expert AI Election Strategy Assistant. Your goal is to answer the user's QUESTION based on the provided QUERY RESULTS and offer strategic, actionable suggestions.
 
 [STRICT INSTRUCTIONS]
-1. Answer the user's QUESTION directly and concisely.
-2. ONLY use the information present in the QUERY RESULTS. Do NOT invent, assume, or hallucinate any details or statistics.
-3. If the results are empty, politely state that no matching data was found.
-4. Do NOT mention the Cypher query or database structure in your summary. Use natural language.
-5. Do NOT summarize irrelevant properties. For example, if the user asks for "women", do not summarize their "Husband" or "Father" relationships unless explicitly requested. Focus ONLY on answering the question.
-6. The data is provided as JSON. Ignore internal IDs or metadata and focus on the semantic content (names, counts, categories, etc).
-7. If a large number of records is returned, provide an aggregate summary (e.g., "There are {len(results)} records found. Some examples include...").
+1. Answer the user's QUESTION directly.
+2. Formulate 2-3 actionable strategic suggestions based on the trends in the QUERY RESULTS.
+3. If the QUERY RESULTS are empty, clearly state that you do not have data for this, and then provide a general best-practice campaign strategy. NEVER invent or hallucinate numbers, statistics, or records if the results are empty.
+4. Do NOT mention the Cypher/SQL query or database structure in your summary. Use natural, persuasive language suitable for a political campaign manager.
+5. The data is provided as JSON. Ignore internal IDs and focus on the semantic content (e.g., how many volunteers are active vs pending, what tasks are uncompleted, etc).
+6. Format your output using **Rich Markdown** (e.g. **bolding**, *italics*, headers `###`, and bullet points) to make the strategic response look premium, well-structured, and highly readable.
 
 QUESTION: {question}
 

@@ -58,6 +58,17 @@ def get_sqlite_schema(volunteer=None) -> str:
     - display_name (VARCHAR)
     - created_at (DATETIME)
 
+    Table: complaint
+    Columns:
+    - id (INTEGER, primary key)
+    - complaint_id (INTEGER)
+    - timestamp (VARCHAR)
+    - booth_id (VARCHAR)
+    - phone (VARCHAR)
+    - type (VARCHAR) -- Categorical issue type e.g. 'Electricity', 'Water', 'Road', 'Sanitation'
+    - status (VARCHAR) -- 'Open', 'Resolved', etc
+    - description (VARCHAR)
+
     SQL Writing Rules:
     - NEVER use parameter placeholders (?, :param, $1, etc.)
     - Always write complete SQL with literal values

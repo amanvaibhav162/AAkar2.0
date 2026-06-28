@@ -23,6 +23,7 @@ from app.api.v1.endpoints.video_calls import router as video_calls_router
 from app.domain.services.seed_graph import seed
 from app.domain.models.user import User  # noqa: F401 – ensure table is registered
 from app.domain.models.volunteer import Volunteer, Task, ConversationState  # noqa: F401 – ensure tables are registered
+from app.domain.models.complaint import Complaint  # noqa: F401
 from app.domain.models.hierarchy import HierarchyNode  # noqa: F401
 from app.domain.models.auth import RevokedToken  # noqa: F401 - ensure table is registered
 from app.domain.models.campaign import Campaign, ConstituencyCoverage  # noqa: F401 - ensure table is registered
