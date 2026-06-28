@@ -47,6 +47,25 @@ def init_db():
     except Exception:
         pass
 
+    # Ensure merged campaign-volunteer columns exist on the volunteer table
+    _volunteer_cols = [
+        ("constituency", "VARCHAR NOT NULL DEFAULT ''"),
+        ("assigned_area", "VARCHAR NOT NULL DEFAULT ''"),
+        ("assigned_task", "VARCHAR NOT NULL DEFAULT ''"),
+        ("lat", "FLOAT"),
+        ("lng", "FLOAT"),
+        ("coverage_status", "VARCHAR NOT NULL DEFAULT 'pending'"),
+        ("task_status", "VARCHAR NOT NULL DEFAULT 'unassigned'"),
+        ("campaign_status", "VARCHAR NOT NULL DEFAULT 'inactive'"),
+        ("last_location_update", "VARCHAR"),
+    ]
+    for col_name, col_type in _volunteer_cols:
+        try:
+            with engine.begin() as conn:
+                conn.execute(text(f"ALTER TABLE volunteer ADD COLUMN {col_name} {col_type}"))
+        except Exception:
+            pass
+
 
 def get_session():
     """FastAPI dependency that yields a SQLModel Session."""

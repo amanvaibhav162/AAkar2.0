@@ -284,7 +284,8 @@ class BOSIEngine:
                 # Demographic stats
                 v_stats = _booth_voter_stats(b.code)
                 # Volunteer count
-                vol_count = _count_users(session, "VOLUNTEER", booth_id=b.code)
+                from app.domain.models.volunteer import Volunteer
+                vol_count = session.exec(select(func.count(Volunteer.id)).where(Volunteer.booth_id == b.code)).one() or 0
                 
                 mandal_booths.append({
                     "code": b.code,

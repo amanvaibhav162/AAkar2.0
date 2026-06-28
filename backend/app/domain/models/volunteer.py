@@ -6,13 +6,13 @@ from sqlmodel import SQLModel, Field
 
 
 class Volunteer(SQLModel, table=True):
-    """Represents a registered WhatsApp volunteer."""
+    """Represents a registered volunteer (WhatsApp + campaign)."""
 
     id: Optional[int] = Field(default=None, primary_key=True)
     phone: str = Field(unique=True, index=True)  # e.g. "919876543210"
     name: Optional[str] = None
     booth_id: Optional[str] = None
-    status: str = Field(default="pending")  # "pending" | "active"
+    status: str = Field(default="pending")  # "pending" | "active" (WhatsApp registration)
     registered_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     # Extended registration details
@@ -26,6 +26,17 @@ class Volunteer(SQLModel, table=True):
     region: Optional[str] = None
     circle: Optional[str] = None
     state: Optional[str] = None
+
+    # Campaign fields (merged from CampaignVolunteer)
+    constituency: str = Field(default="")
+    assigned_area: str = Field(default="")
+    assigned_task: str = Field(default="")
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    coverage_status: str = Field(default="pending")       # "pending" | "covered"
+    task_status: str = Field(default="unassigned")         # "unassigned" | "assigned" | "accepted" | "completed"
+    campaign_status: str = Field(default="inactive")       # "inactive" | "active" (map location tracking)
+    last_location_update: Optional[str] = None
 
 
 class Task(SQLModel, table=True):

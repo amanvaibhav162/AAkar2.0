@@ -132,6 +132,7 @@ def list_volunteers(
         except Exception as e:
             logger.error(f"Failed to read volunteers.json: {e}")
 
+    all_db_phones = set(session.exec(select(Volunteer.phone)).all())
     seen_phones = set()
     result = []
     for vol in volunteers:
@@ -170,7 +171,7 @@ def list_volunteers(
     # Add volunteers from JSON that are not in the DB
     # We will use negative IDs to avoid collision with real DB ids
     for i, (phone, v_extra) in enumerate(extra_data.items(), start=1):
-        if phone not in seen_phones:
+        if phone not in all_db_phones:
             result.append({
                 "id": -i,
                 "phone": phone,

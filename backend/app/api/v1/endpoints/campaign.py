@@ -11,7 +11,8 @@ from sqlmodel import Session, select
 
 from app.infrastructure.db.sqlite_client import engine, get_session
 from app.infrastructure.db.neo4j_client import neo4j_client
-from app.domain.models.campaign import Campaign, CampaignVolunteer, ConstituencyCoverage
+from app.domain.models.campaign import Campaign, ConstituencyCoverage
+from app.domain.models.volunteer import Volunteer
 from app.domain.models.user import User as AppUser
 from app.core.security import get_current_user
 from app.domain.services.whatsapp_service import send_text
@@ -117,17 +118,19 @@ class VolunteerCreate(BaseModel):
     phone: str
     district: str
     constituency: str = ""
+    booth_id: Optional[str] = None
     assigned_area: str
     assigned_task: str
     lat: Optional[float] = None
     lng: Optional[float] = None
-    status: str = "inactive"
+    campaign_status: str = "inactive"
     task_status: str = "unassigned"
 
 class VolunteerUpdate(BaseModel):
     lat: Optional[float] = None
     lng: Optional[float] = None
-    status: Optional[str] = None
+    booth_id: Optional[str] = None
+    campaign_status: Optional[str] = None
     coverage_status: Optional[str] = None
     task_status: Optional[str] = None
     constituency: Optional[str] = None
@@ -218,7 +221,7 @@ def list_volunteers(
     mode: str = Query("abs"),
 ):
     with Session(engine) as session:
-        stmt = select(CampaignVolunteer)
+        stmt = select(Volunteer)
         volunteers = session.exec(stmt).all()
         
         result = []
@@ -239,7 +242,9 @@ def list_volunteers(
 @router.post("/volunteers")
 def create_volunteer(data: VolunteerCreate):
     with Session(engine) as session:
-        vol = CampaignVolunteer(**data.model_dump())
+        vol_dict = data.model_dump()
+        vol_dict["status"] = "active"
+        vol = Volunteer(**vol_dict)
         session.add(vol)
         session.commit()
         session.refresh(vol)
@@ -249,7 +254,7 @@ def create_volunteer(data: VolunteerCreate):
 @router.patch("/volunteers/{volunteer_id}")
 def update_volunteer(volunteer_id: int, data: VolunteerUpdate):
     with Session(engine) as session:
-        vol = session.get(CampaignVolunteer, volunteer_id)
+        vol = session.get(Volunteer, volunteer_id)
         if not vol:
             raise HTTPException(status_code=404, detail="Volunteer not found")
         updates = data.model_dump(exclude_none=True)
@@ -265,12 +270,12 @@ def update_volunteer(volunteer_id: int, data: VolunteerUpdate):
 @router.patch("/volunteers/{volunteer_id}/location")
 def update_location(volunteer_id: int, lat: float, lng: float):
     with Session(engine) as session:
-        vol = session.get(CampaignVolunteer, volunteer_id)
+        vol = session.get(Volunteer, volunteer_id)
         if not vol:
             raise HTTPException(status_code=404, detail="Volunteer not found")
         vol.lat = lat
         vol.lng = lng
-        vol.status = "active"
+        vol.campaign_status = "active"
         vol.last_location_update = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
         session.add(vol)
         session.commit()
@@ -281,7 +286,7 @@ def update_location(volunteer_id: int, lat: float, lng: float):
 @router.patch("/volunteers/{volunteer_id}/mark-covered")
 def mark_volunteer_covered(volunteer_id: int, mode: str = Query("abs")):
     with Session(engine) as session:
-        vol = session.get(CampaignVolunteer, volunteer_id)
+        vol = session.get(Volunteer, volunteer_id)
         if not vol:
             raise HTTPException(status_code=404, detail="Volunteer not found")
         vol.coverage_status = "covered"
@@ -308,7 +313,7 @@ def mark_volunteer_covered(volunteer_id: int, mode: str = Query("abs")):
 @router.delete("/volunteers/{volunteer_id}")
 def delete_volunteer(volunteer_id: int):
     with Session(engine) as session:
-        vol = session.get(CampaignVolunteer, volunteer_id)
+        vol = session.get(Volunteer, volunteer_id)
         if not vol:
             raise HTTPException(status_code=404, detail="Volunteer not found")
         session.delete(vol)
@@ -385,7 +390,7 @@ def mark_all_covered(district: str, covered_by: Optional[str] = Query(None), mod
             session.add(row)
             
         # Also mark all volunteers in district as covered
-        vols = session.exec(select(CampaignVolunteer)).all()
+        vols = session.exec(select(Volunteer)).all()
         vols_marked = 0
         for v in vols:
             resolved_dist = get_resolved_district(v, mode)
@@ -406,7 +411,7 @@ def campaign_summary(mode: str = Query("abs")):
         result = {}
         
         mapping = CONSTITUENCIES_NEW if mode in ("new", "abs") else CONSTITUENCIES_OLD
-        all_vols = session.exec(select(CampaignVolunteer)).all()
+        all_vols = session.exec(select(Volunteer)).all()
         all_covs = session.exec(select(ConstituencyCoverage)).all()
         
         cov_by_constit = {normalize_ac_name(r.constituency): r for r in all_covs}
@@ -427,7 +432,7 @@ def campaign_summary(mode: str = Query("abs")):
                 "total_constituencies": len(constits),
                 "covered_constituencies": covered,
                 "total_volunteers": len(vols_in_dist),
-                "active_volunteers": sum(1 for v in vols_in_dist if v.status == "active"),
+                "active_volunteers": sum(1 for v in vols_in_dist if v.campaign_status == "active"),
             }
         return {"summary": result}
 
@@ -576,24 +581,24 @@ def create_campaign(
                 pass
     campaign.broadcast_sent_to = sent_count
 
-    # 2. Send WhatsApp to CampaignVolunteers in the area
+    # 2. Send WhatsApp to volunteers in the area
     background_tasks.add_task(_notify_volunteers_whatsapp, campaign, data.district, data.constituency, data.title, data.description)
 
     return campaign
 
 
 async def _notify_volunteers_whatsapp(campaign: Campaign, district: Optional[str], constituency: Optional[str], title: str, description: str):
-    """Fire-and-forget WhatsApp notifications to CampaignVolunteers in the area."""
+    """Fire-and-forget WhatsApp notifications to volunteers in the area."""
     try:
         loop = asyncio.get_running_loop()
 
         def _get_volunteers():
             with Session(engine) as s:
-                stmt = select(CampaignVolunteer)
+                stmt = select(Volunteer)
                 if constituency:
-                    stmt = stmt.where(CampaignVolunteer.constituency == constituency)
+                    stmt = stmt.where(Volunteer.constituency == constituency)
                 elif district:
-                    stmt = stmt.where(CampaignVolunteer.district == district)
+                    stmt = stmt.where(Volunteer.district == district)
                 return s.exec(stmt).all()
 
         volunteers = await loop.run_in_executor(None, _get_volunteers)

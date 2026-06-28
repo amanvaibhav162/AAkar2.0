@@ -15,6 +15,22 @@ def _require_auth(current_user: User = Depends(get_current_user)):
     return current_user
 
 
+def _count_volunteers(session: Session, level: str, code: str) -> int:
+    """Count volunteers in the Volunteer table scoped to a hierarchy node.
+
+    Uses booth_id prefix matching since codes encode hierarchy
+    (e.g. booth 'CD-BLM-M1-B1' belongs to district 'CD', constituency 'CD-BLM', etc.).
+    """
+    from app.domain.models.volunteer import Volunteer
+    if level == "state":
+        q = select(func.count(Volunteer.id)).where(Volunteer.booth_id != None, Volunteer.booth_id != "")
+    elif level == "booth":
+        q = select(func.count(Volunteer.id)).where(Volunteer.booth_id == code)
+    else:
+        q = select(func.count(Volunteer.id)).where(Volunteer.booth_id.like(f"{code}%"))
+    return session.exec(q).one() or 0
+
+
 def _count_descendants(session: Session, parent_code: str, target_level: str) -> int:
     parent = session.exec(
         select(HierarchyNode).where(HierarchyNode.code == parent_code)
@@ -519,7 +535,7 @@ def get_dashboard_stats(
             "districts": _count_descendants(session, code, "district"),
             "constituencies": _count_descendants(session, code, "constituency"),
             "booths": _count_descendants(session, code, "booth"),
-            "volunteers": _count_users(session, "VOLUNTEER", state_id=code),
+            "volunteers": _count_volunteers(session, "state", code),
             "district_admins": _count_users(session, "DISTRICT_ADMIN", state_id=code),
             "constituency_managers": _count_users(session, "CONSTITUENCY_MGR", state_id=code),
             "coverage_pct": coverage_pct,
@@ -538,7 +554,7 @@ def get_dashboard_stats(
             "constituencies": _count_descendants(session, code, "constituency"),
             "mandals": _count_descendants(session, code, "mandal"),
             "booths": _count_descendants(session, code, "booth"),
-            "volunteers": _count_users(session, "VOLUNTEER", district_id=code),
+            "volunteers": _count_volunteers(session, "district", code),
             "constituency_managers": _count_users(session, "CONSTITUENCY_MGR", district_id=code),
             "coverage_pct": coverage_pct,
             "bosi_avg": BOSIEngine.get_district_bosi_average(code, session),
@@ -552,7 +568,7 @@ def get_dashboard_stats(
         return {
             "booths": _count_descendants(session, code, "booth"),
             "mandals": _count_descendants(session, code, "mandal"),
-            "volunteers": _count_users(session, "VOLUNTEER", constituency_id=code),
+            "volunteers": _count_volunteers(session, "constituency", code),
             "coverage_pct": coverage_pct,
             "bosi_avg": BOSIEngine.get_constituency_bosi_average(code, session)
         }
@@ -562,7 +578,7 @@ def get_dashboard_stats(
         v_stats = _mandal_voter_stats(session, code)
         return {
             "booths": _count_descendants(session, code, "booth"),
-            "volunteers": _count_users(session, "VOLUNTEER", mandal_id=code),
+            "volunteers": _count_volunteers(session, "mandal", code),
             "voters": v_stats["total"],
             "demographics": v_stats,
             "bosi_avg": BOSIEngine.get_mandal_bosi_average(code, session)
@@ -571,7 +587,7 @@ def get_dashboard_stats(
     if level == "booth":
         v_stats = _booth_voter_stats(code)
         return {
-            "volunteers": _count_users(session, "VOLUNTEER", booth_id=code),
+            "volunteers": _count_volunteers(session, "booth", code),
             "voters": v_stats["total"],
             "demographics": v_stats
         }

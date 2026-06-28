@@ -25,7 +25,7 @@ from app.domain.models.user import User  # noqa: F401 – ensure table is regist
 from app.domain.models.volunteer import Volunteer, Task, ConversationState  # noqa: F401 – ensure tables are registered
 from app.domain.models.hierarchy import HierarchyNode  # noqa: F401
 from app.domain.models.auth import RevokedToken  # noqa: F401 - ensure table is registered
-from app.domain.models.campaign import Campaign, CampaignVolunteer, ConstituencyCoverage  # noqa: F401 - ensure table is registered
+from app.domain.models.campaign import Campaign, ConstituencyCoverage  # noqa: F401 - ensure table is registered
 from app.domain.models.call_log import CallLog  # noqa: F401 - ensure table is registered
 from app.infrastructure.db.sqlite_client import init_db
 from app.infrastructure.db.neo4j_client import neo4j_client
