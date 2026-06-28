@@ -26,8 +26,15 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "sqlite:///./data/app.db"
 
+    # LiveKit
+    LIVEKIT_ENABLED: str = "False"
+    LIVEKIT_URL: str = ""
+    LIVEKIT_API_KEY: str = ""
+    LIVEKIT_API_SECRET: str = ""
+
     model_config = SettingsConfigDict(
-        env_file=Path(__file__).resolve().parent.parent.parent / ".env"
+        env_file=Path(__file__).resolve().parent.parent.parent / ".env",
+        extra="ignore"
     )
 
 

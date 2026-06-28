@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  livekit:
+    image: livekit/livekit-server:latest
+    ports:
+      - "7880:7880"       # HTTP/WebSocket
+      - "7881:7881"       # Admin HTTP
+      - "7882:7882/udp"   # WebRTC UDP
+    environment:
+      # These must match LIVEKIT_API_KEY and LIVEKIT_API_SECRET in backend/.env
+      - LIVEKIT_KEYS=devkey: secret
+    restart: unless-stopped

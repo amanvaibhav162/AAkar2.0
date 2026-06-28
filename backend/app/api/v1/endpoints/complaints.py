@@ -28,6 +28,8 @@ CSV_COLUMNS = [
     "type",
     "status",
     "description",
+    "location",
+    "image_path"
 ]
 
 
@@ -37,6 +39,8 @@ class LodgeComplaintRequest(BaseModel):
     phone: str
     type: str
     description: str
+    location: str = ""
+    image_path: str = ""
     booth_id: str = ""
 
 
@@ -46,6 +50,8 @@ class LegacyComplaintRequest(BaseModel):
     epic: str
     issue_type: str
     description: str
+    location: str = ""
+    image_path: str = ""
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -111,7 +117,9 @@ CREATE (c:Complaint {
   timestamp: $timestamp,
   booth_id: $booth_id,
   phone: $phone,
-  description: $description
+  description: $description,
+  location: coalesce($location, ""),
+  image_path: coalesce($image_path, "")
 })
 WITH c
 MATCH (v:Voter {epic: $epic})
@@ -143,6 +151,26 @@ def _write_csv_backup(row: dict) -> None:
         new_df.to_csv(COMPLAINTS_CSV, index=False)
     except Exception as exc:
         print(f"CSV backup write failed (non-fatal): {exc}")
+
+
+def _write_json_backup(row: dict) -> None:
+    """Append a single row to complaints.json (best-effort)."""
+    import json
+    try:
+        json_path = UPLOADS_DIR / "complaints.json"
+        UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+        data = []
+        if json_path.exists():
+            with open(json_path, "r") as f:
+                try:
+                    data = json.load(f)
+                except json.JSONDecodeError:
+                    pass
+        data.append(row)
+        with open(json_path, "w") as f:
+            json.dump(data, f, indent=2)
+    except Exception as exc:
+        print(f"JSON backup write failed (non-fatal): {exc}")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -218,22 +246,25 @@ async def lodge_complaint_sms(request: LodgeComplaintRequest):
                 "booth_id": booth_id,
                 "phone": request.phone,
                 "description": request.description,
+                "location": request.location,
+                "image_path": request.image_path,
             },
         )
 
-        # ── CSV backup ──
-        _write_csv_backup(
-            {
-                "complaint_id": next_id,
-                "timestamp": timestamp,
-                "booth_id": booth_id,
-                "epic": request.epic,
-                "phone": request.phone,
-                "type": request.type,
-                "status": "Open",
-                "description": request.description,
-            }
-        )
+        # ── CSV & JSON backup ──
+        backup_row = {
+            "complaint_id": next_id,
+            "timestamp": timestamp,
+            "booth_id": booth_id,
+            "phone": request.phone,
+            "type": request.type,
+            "status": "Open",
+            "description": request.description,
+            "location": request.location,
+            "image_path": request.image_path,
+        }
+        _write_csv_backup(backup_row)
+        _write_json_backup(backup_row)
 
         # ── SMS notification ──
         sms_message = (
@@ -254,6 +285,79 @@ async def lodge_complaint_sms(request: LodgeComplaintRequest):
     except Exception as e:
         print(f"Error lodging complaint: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+async def lodge_volunteer_complaint_internal(
+    phone: str,
+    aadhar: str,
+    pincode: str,
+    issue_type: str,
+    description: str,
+    location: str,
+    image_path: str = "",
+    booth_id: str = ""
+):
+    next_id = _next_complaint_id()
+    timestamp = datetime.now().isoformat()
+    
+    query = """
+    CREATE (c:Complaint {
+      complaint_id: $complaint_id,
+      aadhar: $aadhar,
+      pincode: $pincode,
+      type: $type,
+      status: $status,
+      timestamp: $timestamp,
+      booth_id: $booth_id,
+      phone: $phone,
+      description: $description,
+      location: coalesce($location, ""),
+      image_path: coalesce($image_path, "")
+    })
+    WITH c
+    OPTIONAL MATCH (v:User {phone: $phone})
+    FOREACH (ignore IN CASE WHEN v IS NOT NULL THEN [1] ELSE [] END |
+        MERGE (v)-[:REPORTED]->(c)
+    )
+    """
+    neo4j_client.run_query(
+        query,
+        {
+            "complaint_id": next_id,
+            "aadhar": aadhar,
+            "pincode": pincode,
+            "type": issue_type,
+            "status": "Open",
+            "timestamp": timestamp,
+            "booth_id": booth_id,
+            "phone": phone,
+            "description": description,
+            "location": location,
+            "image_path": image_path,
+        },
+    )
+
+    backup_row = {
+        "complaint_id": next_id,
+        "timestamp": timestamp,
+        "booth_id": booth_id,
+        "aadhar": aadhar,
+        "pincode": pincode,
+        "phone": phone,
+        "type": issue_type,
+        "status": "Open",
+        "description": description,
+        "location": location,
+        "image_path": image_path,
+    }
+    _write_csv_backup(backup_row)
+    _write_json_backup(backup_row)
+
+    sms_message = (
+        f"AAkar: Your complaint (Ref: {next_id}) regarding "
+        f"'{issue_type}' has been REGISTERED successfully."
+    )
+    send_sms(phone, sms_message)
+    return {"status": "success", "complaint_id": next_id}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -289,22 +393,25 @@ async def lodge_complaint_legacy(request: LegacyComplaintRequest):
                 "booth_id": booth_id,
                 "phone": "N/A",
                 "description": request.description,
+                "location": request.location,
+                "image_path": request.image_path,
             },
         )
 
-        # ── CSV backup ──
-        _write_csv_backup(
-            {
-                "complaint_id": next_id,
-                "timestamp": timestamp,
-                "booth_id": booth_id,
-                "epic": request.epic,
-                "phone": "N/A",
-                "type": request.issue_type,
-                "status": "Open",
-                "description": request.description,
-            }
-        )
+        # ── CSV & JSON backup ──
+        backup_row = {
+            "complaint_id": next_id,
+            "timestamp": timestamp,
+            "booth_id": booth_id,
+            "phone": "N/A",
+            "type": request.issue_type,
+            "status": "Open",
+            "description": request.description,
+            "location": request.location,
+            "image_path": request.image_path,
+        }
+        _write_csv_backup(backup_row)
+        _write_json_backup(backup_row)
 
         return {"status": "success", "complaint_id": next_id}
 

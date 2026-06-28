@@ -4,6 +4,7 @@ import BroadcastPanel from '../shared/BroadcastPanel';
 import ManageUsers from '../shared/ManageUsers';
 import Hub from '../shared/Hub';
 import AICopilot from '../shared/AICopilot';
+import VideoCallPanel from '../shared/VideoCallPanel';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
@@ -34,6 +35,7 @@ export default function MandalDashboard({ tab, hierarchy }) {
       case 'campaign':     return <CampaignPanel />;
       case 'manage-users': return <ManageUsers role="MANDAL_MGR" hierarchy={hierarchy} />;
       case 'hub':          return <Hub hierarchy={hierarchy} userRole="MANDAL_MGR" />;
+      case 'video-call':   return <VideoCallPanel hierarchy={hierarchy} userRole="MANDAL_MGR" />;
       case 'volunteers':   return <VolunteerView mandal={mandal} onTabChange={handleTabChange} />;
       case 'broadcast':    return <BroadcastPanel hierarchy={hierarchy} />;
       case 'complaints':    return <ComplaintBoard mandal={mandal} />;

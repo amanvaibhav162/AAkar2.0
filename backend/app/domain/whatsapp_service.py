@@ -203,6 +203,25 @@ async def simulate_whatsapp(body: dict, _user=Depends(get_current_user)):
                 }]
             }]
         }
+    elif body.get("is_location") and body.get("latitude") and body.get("longitude"):
+        mock_payload = {
+            "entry": [{
+                "changes": [{
+                    "value": {
+                        "messages": [{
+                            "from": phone,
+                            "type": "location",
+                            "location": {
+                                "latitude": body["latitude"],
+                                "longitude": body["longitude"],
+                                "name": "Simulated GPS Location",
+                                "address": ""
+                            }
+                        }]
+                    }
+                }]
+            }]
+        }
     else:
         message = body.get("message", "hi")
         mock_payload = {
@@ -227,7 +246,18 @@ async def simulate_whatsapp(body: dict, _user=Depends(get_current_user)):
 
     replies = list(_simulated_replies)
     _simulated_replies = []
-    return {"phone": phone, "replies": replies}
+    
+    with Session(engine) as session:
+        state_record = session.exec(
+            select(ConversationState).where(ConversationState.phone == phone)
+        ).first()
+        current_step = state_record.current_step if state_record else None
+
+    return {
+        "phone": phone, 
+        "replies": replies, 
+        "conversation_state": {"current_step": current_step}
+    }
 
 
 @router.post("/send")
@@ -321,6 +351,17 @@ async def receive_whatsapp_message(request: Request):
         msg_type = msg.get("type", "text")
         text_body = msg.get("text", {}).get("body", "").strip()
 
+        if msg_type == "location":
+            loc = msg.get("location", {})
+            lat = loc.get("latitude")
+            lng = loc.get("longitude")
+            addr = loc.get("address", "")
+            name = loc.get("name", "")
+            text_body = f"Lat: {lat}, Lng: {lng}"
+            extra = ", ".join(filter(bool, [name, addr]))
+            if extra:
+                text_body += f" ({extra})"
+
         with Session(engine) as session:
             # Handle reset for both registered and unregistered users
             if text_body.lower() in ("reset", "restart"):
@@ -329,28 +370,116 @@ async def receive_whatsapp_message(request: Request):
                 ).first()
                 if state:
                     session.delete(state)
-                volunteer_to_delete = session.exec(
-                    select(Volunteer).where(Volunteer.phone == from_number)
-                ).first()
-                if volunteer_to_delete:
-                    session.delete(volunteer_to_delete)
                 session.commit()
-                await send_text(from_number, "Conversation reset. Send 'hi' to start.")
+                await send_text(from_number, "Conversation reset. You can send 'hi' or 'COMPLAINT' anytime.")
                 return {"status": "received"}
 
-            # Look up volunteer by phone number
+            # Look up volunteer by phone number early so we can use it everywhere
             volunteer = session.exec(
                 select(Volunteer).where(Volunteer.phone == from_number)
             ).first()
 
+            # Load any active conversation state
+            state = session.exec(
+                select(ConversationState).where(ConversationState.phone == from_number)
+            ).first()
+
+            # --- COMPLAINT STATE MACHINE ---
+            if state and state.current_step.startswith("complaint_"):
+                if state.current_step == "complaint_image":
+                    data = json.loads(state.collected_data)
+                    image_path = ""
+                    if msg_type == "image":
+                        media_id = msg["image"]["id"]
+                        image_bytes = await download_media(media_id)
+                        import uuid
+                        import os
+                        os.makedirs("data/uploads/complaints", exist_ok=True)
+                        filename = f"data/uploads/complaints/{uuid.uuid4()}.jpg"
+                        with open(filename, "wb") as f:
+                            f.write(image_bytes)
+                        image_path = filename
+                    elif text_body.lower() not in ["skip", "no"]:
+                        await send_text(from_number, "Please attach an image, or type 'skip' to proceed without one.")
+                        return {"status": "received"}
+                        
+                    data["image_path"] = image_path
+                    state.collected_data = json.dumps(data)
+                    state.current_step = "complaint_type"
+                    state.updated_at = datetime.now(timezone.utc)
+                    session.add(state)
+                    session.commit()
+                    await send_text(from_number, "What type of issue is this? (e.g., Water, Electricity, Road)")
+                    return {"status": "received"}
+
+                elif state.current_step == "complaint_type":
+                    data = json.loads(state.collected_data)
+                    data["type"] = text_body.strip()
+                    state.collected_data = json.dumps(data)
+                    state.current_step = "complaint_desc"
+                    state.updated_at = datetime.now(timezone.utc)
+                    session.add(state)
+                    session.commit()
+                    await send_text(from_number, "Please provide a brief description of the issue.")
+                    return {"status": "received"}
+                
+                elif state.current_step == "complaint_desc":
+                    data = json.loads(state.collected_data)
+                    data["description"] = text_body.strip()
+                    state.collected_data = json.dumps(data)
+                    state.current_step = "complaint_location"
+                    state.updated_at = datetime.now(timezone.utc)
+                    session.add(state)
+                    session.commit()
+                    await send_text(from_number, "Please provide the exact location of the issue (e.g., Landmark, Street, or nearby area).")
+                    return {"status": "received"}
+
+                elif state.current_step == "complaint_location":
+                    data = json.loads(state.collected_data)
+                    data["location"] = text_body.strip()
+                    
+                    from app.api.v1.endpoints.complaints import lodge_volunteer_complaint_internal
+                    try:
+                        await lodge_volunteer_complaint_internal(
+                            phone=from_number,
+                            aadhar=volunteer.aadhar if volunteer.aadhar else "N/A",
+                            pincode=volunteer.pincode if volunteer.pincode else "N/A",
+                            issue_type=data.get("type", "General"),
+                            description=data.get("description", ""),
+                            location=data["location"],
+                            image_path=data.get("image_path", ""),
+                            booth_id=volunteer.booth_id if volunteer.booth_id else ""
+                        )
+                        await send_text(from_number, "✅ Your complaint has been registered successfully! You will also receive an SMS confirmation.")
+                    except Exception as e:
+                        logger.error(f"Failed to lodge complaint from WhatsApp: {e}")
+                        await send_text(from_number, "❌ Sorry, there was an error registering your complaint. Please try again later.")
+                    
+                    session.delete(state)
+                    session.commit()
+                    return {"status": "received"}
+
+            # --- START NEW COMPLAINT ---
+            if not state and text_body.strip().upper() == "COMPLAINT":
+                if volunteer is None:
+                    await send_text(from_number, "You must be a registered volunteer to lodge a complaint. Send 'hi' to register.")
+                    return {"status": "received"}
+                
+                state = ConversationState(
+                    phone=from_number,
+                    current_step="complaint_image",
+                    collected_data="{}",
+                    updated_at=datetime.now(timezone.utc)
+                )
+                session.add(state)
+                session.commit()
+                await send_text(from_number, "Please provide an image of the issue (or type 'skip' to lodge without one).")
+                return {"status": "received"}
+
             if volunteer is None:
                 # --- UNREGISTERED: handle registration flow ---
-                state = session.exec(
-                    select(ConversationState).where(ConversationState.phone == from_number)
-                ).first()
-
                 if state is None:
-                    if text_body.lower() == "hi":
+                    if text_body.lower() == "register":
                         state = ConversationState(
                             phone=from_number,
                             current_step="awaiting_name",
@@ -365,7 +494,7 @@ async def receive_whatsapp_message(request: Request):
                             "What is your full name?",
                         )
                     else:
-                        await send_text(from_number, "Send hi to register as a volunteer.")
+                        await send_text(from_number, "Welcome to AAkar! Reply 'REGISTER' if you want to register as a volunteer.")
 
                 elif state.current_step == "awaiting_name":
                     data = json.loads(state.collected_data)
@@ -536,7 +665,31 @@ async def receive_whatsapp_message(request: Request):
 
             else:
                 # --- REGISTERED VOLUNTEER ---
-                if msg_type == "text" and text_body.upper() == "DONE":
+                cmd = text_body.strip().upper()
+                if msg_type == "text" and cmd in ("HI", "HELLO", "MENU", "OPTIONS"):
+                    await send_text(
+                        from_number,
+                        f"Welcome back {volunteer.name}!\n\n"
+                        "Reply with:\n"
+                        "- TASKS to see your assigned tasks\n"
+                        "- COMPLAINT to lodge an issue\n"
+                        "- Or just ask me an election-related question!"
+                    )
+                elif msg_type == "text" and cmd == "TASKS":
+                    tasks = session.exec(
+                        select(Task).where(
+                            Task.volunteer_id == volunteer.id, 
+                            Task.status == "assigned"
+                        )
+                    ).all()
+                    if not tasks:
+                        await send_text(from_number, "You have no pending tasks. Good job!")
+                    else:
+                        resp = "*Your Pending Tasks:*\n"
+                        for i, t in enumerate(tasks, 1):
+                            resp += f"{i}. {t.title} - {t.description or ''}\n"
+                        await send_text(from_number, resp)
+                elif msg_type == "text" and cmd == "DONE":
                     task = session.exec(
                         select(Task)
                         .where(Task.volunteer_id == volunteer.id, Task.status == "assigned")

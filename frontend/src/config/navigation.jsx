@@ -4,7 +4,7 @@ import {
   LayoutDashboard, TrendingUp, BarChart3, Users, Radio,
   FileText, Map, AlertTriangle, Activity, Shield,
   CheckSquare, Camera, MessageSquare, ClipboardList,
-  Target, Globe, Zap, Search, Settings, Database, UserCog
+  Target, Globe, Zap, Search, Settings, Database, UserCog, Video
 } from 'lucide-react';
 
 export const ROLE_NAV = {
@@ -15,6 +15,7 @@ export const ROLE_NAV = {
     { id: 'manage-users', label: 'Manage Users', icon: <UserCog size={20} /> },
     { id: 'ai-suggestions', label: 'AI Suggestions', icon: <Zap size={20} /> },
     { id: 'hub', label: 'Hub', icon: <MessageSquare size={20} /> },
+    { id: 'video-call', label: 'Video Conference', icon: <Video size={20} /> },
     { id: 'broadcast', label: 'State Broadcast', icon: <Radio size={20} /> },
     { id: 'reports', label: 'Final Reports', icon: <FileText size={20} /> },
   ],
@@ -26,6 +27,7 @@ export const ROLE_NAV = {
     { id: 'manage-users', label: 'Manage Users', icon: <UserCog size={20} /> },
     { id: 'ai-suggestions', label: 'AI Suggestions', icon: <Zap size={20} /> },
     { id: 'hub', label: 'Hub', icon: <MessageSquare size={20} /> },
+    { id: 'video-call', label: 'Video Conference', icon: <Video size={20} /> },
     { id: 'broadcast', label: 'District Broadcast', icon: <Radio size={20} /> },
   ],
   CONSTITUENCY_MGR: [
@@ -34,6 +36,7 @@ export const ROLE_NAV = {
     { id: 'campaign', label: 'Campaign Management', icon: <Target size={20} /> },
     { id: 'manage-users', label: 'Manage Users', icon: <UserCog size={20} /> },
     { id: 'hub', label: 'Hub', icon: <MessageSquare size={20} /> },
+    { id: 'video-call', label: 'Video Conference', icon: <Video size={20} /> },
     { id: 'broadcast', label: 'Constituency Broadcast', icon: <Radio size={20} /> },
     { id: 'ai-suggestions', label: 'AI Suggestions', icon: <Zap size={20} /> },
   ],
@@ -44,6 +47,7 @@ export const ROLE_NAV = {
     { id: 'manage-users', label: 'Manage Users', icon: <UserCog size={20} /> },
     { id: 'volunteers', label: 'Volunteer App', icon: <Users size={20} /> },
     { id: 'hub', label: 'Hub', icon: <MessageSquare size={20} /> },
+    { id: 'video-call', label: 'Video Conference', icon: <Video size={20} /> },
     { id: 'broadcast', label: 'Mandal Broadcast', icon: <Radio size={20} /> },
     { id: 'ai-suggestions', label: 'AI Suggestions', icon: <Zap size={20} /> },
     { id: 'complaints', label: 'Complaints', icon: <AlertTriangle size={20} /> },

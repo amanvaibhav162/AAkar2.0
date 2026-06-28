@@ -12,6 +12,7 @@ import BoothDashboard from '../../components/dashboards/BoothDashboard';
 
 import AICopilot from '../../components/shared/AICopilot';
 import ElectionAdminDashboard from '../../components/dashboards/ElectionAdminDashboard';
+import IncomingCallBanner from '../../components/shared/IncomingCallBanner';
 
 export default function ElectionPage() {
   const { currentUser } = useAuth();
@@ -50,8 +51,10 @@ export default function ElectionPage() {
 
   return (
     <>
+      <IncomingCallBanner />
       {renderDashboard()}
       {activeTab === 'ai-suggestions' && <AICopilot hierarchy={hierarchy} />}
     </>
   );
 }
+

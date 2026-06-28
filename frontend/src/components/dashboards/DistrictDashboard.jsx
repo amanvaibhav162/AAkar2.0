@@ -3,6 +3,7 @@ import HeatmapAnalysis from './HeatmapAnalysis';
 import BroadcastPanel from '../shared/BroadcastPanel';
 import ManageUsers from '../shared/ManageUsers';
 import Hub from '../shared/Hub';
+import VideoCallPanel from '../shared/VideoCallPanel';
 import dynamic from 'next/dynamic';
 
 const CampaignPanel = dynamic(() => import('../CampaignPanel'), {
@@ -27,6 +28,7 @@ export default function DistrictDashboard({ tab, hierarchy }) {
     case 'issues':        return <LocalIssues />;
     case 'ai-suggestions': return null;
     case 'hub':           return <Hub hierarchy={hierarchy} userRole="DISTRICT_ADMIN" />;
+    case 'video-call':    return <VideoCallPanel hierarchy={hierarchy} userRole="DISTRICT_ADMIN" />;
     case 'manage-users':  return <ManageUsers role="DISTRICT_ADMIN" hierarchy={hierarchy} />;
     case 'broadcast':     return <BroadcastPanel hierarchy={hierarchy} />;
     default:              return <DistrictOverview district={district} />;

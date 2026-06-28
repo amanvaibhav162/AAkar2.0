@@ -5,7 +5,7 @@ export default function WhatsAppSimulator() {
   const [phone, setPhone] = useState('917696138229');
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([
-    { from: 'bot', type: 'text', text: 'WhatsApp Simulator active. Send "hi" to start registration.' },
+    { from: 'bot', type: 'text', text: 'WhatsApp Simulator active. Send "hi" to register or "COMPLAINT" to lodge an issue.' },
   ]);
   const [loading, setLoading] = useState(false);
   const [conversationState, setConversationState] = useState(null);
@@ -21,13 +21,16 @@ export default function WhatsAppSimulator() {
     if (loading) return;
     const text = opts.text !== undefined ? opts.text : input.trim();
     const isImage = opts.isImage || false;
+    const isLocation = opts.isLocation || false;
 
-    if (!text && !isImage) return;
-    if (!isImage) setInput('');
+    if (!text && !isImage && !isLocation) return;
+    if (!isImage && !isLocation) setInput('');
     setLoading(true);
 
     if (isImage) {
       setMessages(prev => [...prev, { from: 'user', type: 'image', image: opts.imageData }]);
+    } else if (isLocation) {
+      setMessages(prev => [...prev, { from: 'user', type: 'location', text: `📍 Location (${opts.latitude.toFixed(4)}, ${opts.longitude.toFixed(4)})` }]);
     } else {
       setMessages(prev => [...prev, { from: 'user', type: 'text', text }]);
     }
@@ -37,6 +40,10 @@ export default function WhatsAppSimulator() {
       if (isImage) {
         body.is_image = true;
         body.image_data = opts.imageData.replace(/^data:image\/\w+;base64,/, '');
+      } else if (isLocation) {
+        body.is_location = true;
+        body.latitude = opts.latitude;
+        body.longitude = opts.longitude;
       } else {
         body.message = text;
       }
@@ -88,8 +95,26 @@ export default function WhatsAppSimulator() {
     e.target.value = '';
   };
 
+  const sendLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser");
+      return;
+    }
+    setLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        sendMessage({ isLocation: true, latitude, longitude });
+      },
+      (error) => {
+        setLoading(false);
+        alert("Unable to retrieve your location. " + error.message);
+      }
+    );
+  };
+
   const clearConversation = async () => {
-    setMessages([{ from: 'bot', type: 'text', text: 'Conversation reset. Send "hi" to start again.' }]);
+    setMessages([{ from: 'bot', type: 'text', text: 'Conversation reset. Send "hi" to see your options.' }]);
     setConversationState(null);
     try {
       await fetch('/api/v1/whatsapp/simulate', {
@@ -168,12 +193,44 @@ export default function WhatsAppSimulator() {
                   alt="Uploaded"
                   style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 6, display: 'block' }}
                 />
+              ) : msg.type === 'location' ? (
+                <span style={{ color: '#075e54', fontWeight: 600 }}>{msg.text}</span>
               ) : (
                 msg.text
               )}
             </div>
           </div>
         ))}
+        {conversationState?.current_step === 'complaint_image' && !loading && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              style={{
+                background: '#fff', border: '1px solid #075e54', color: '#075e54',
+                borderRadius: 20, padding: '8px 16px', fontSize: 13, fontWeight: 600,
+                cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                display: 'flex', alignItems: 'center', gap: 6
+              }}
+            >
+              <span style={{ fontSize: 16 }}>📎</span> Upload Image
+            </button>
+          </div>
+        )}
+        {conversationState?.current_step === 'complaint_location' && !loading && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
+            <button
+              onClick={sendLocation}
+              style={{
+                background: '#fff', border: '1px solid #075e54', color: '#075e54',
+                borderRadius: 20, padding: '8px 16px', fontSize: 13, fontWeight: 600,
+                cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                display: 'flex', alignItems: 'center', gap: 6
+              }}
+            >
+              <span style={{ fontSize: 16 }}>📍</span> Share Current Location
+            </button>
+          </div>
+        )}
         {loading && (
           <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
             <div style={{
@@ -202,16 +259,18 @@ export default function WhatsAppSimulator() {
               fontSize: 13, outline: 'none', fontFamily: 'inherit',
             }}
           />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={loading}
-            title="Attach image"
-            style={{
-              background: loading ? '#ccc' : '#075e54',
-              border: 'none', color: '#fff', borderRadius: 8,
-              padding: '0 14px', fontSize: 18, cursor: loading ? 'default' : 'pointer',
-            }}
-          >📎</button>
+          {(!conversationState) && (
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={loading}
+              title="Attach image"
+              style={{
+                background: loading ? '#ccc' : '#075e54',
+                border: 'none', color: '#fff', borderRadius: 8,
+                padding: '0 14px', fontSize: 18, cursor: loading ? 'default' : 'pointer',
+              }}
+            >📎</button>
+          )}
           <button
             onClick={() => sendMessage()}
             disabled={loading || !input.trim()}

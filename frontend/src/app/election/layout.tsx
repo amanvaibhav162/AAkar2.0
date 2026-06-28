@@ -60,9 +60,8 @@ export default function ElectionLayout({ children }: { children: React.ReactNode
 
   return (
     <div className="app">
-      <style>{`.sidebar:not(:hover) .sidebar-brand img { opacity: 0; visibility: hidden; }`}</style>
       {!isFieldWorker && (
-        <div className="sidebar expanded">
+        <div className="sidebar">
           <div className="sidebar-top">
             <div className="sidebar-brand" style={{ padding: '16px 20px' }}>
                 <img src={logo.src} alt="Logo" style={{ height: '36px', objectFit: 'contain' }} />

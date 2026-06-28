@@ -5,6 +5,7 @@ import BroadcastPanel from '../shared/BroadcastPanel';
 import ManageUsers from '../shared/ManageUsers';
 import Hub from '../shared/Hub';
 import AICopilot from '../shared/AICopilot';
+import VideoCallPanel from '../shared/VideoCallPanel';
 import dynamic from 'next/dynamic';
 
 const CampaignPanel = dynamic(() => import('../CampaignPanel'), {
@@ -34,6 +35,7 @@ export default function ConstituencyDashboard({ tab, hierarchy }) {
       case 'heatmap':          return <HeatmapAnalysis level="CONSTITUENCY" hierarchy={hierarchy} />;
       case 'campaign':         return <CampaignPanel />;
       case 'hub':              return <Hub hierarchy={hierarchy} userRole="CONSTITUENCY_MGR" />;
+      case 'video-call':       return <VideoCallPanel hierarchy={hierarchy} userRole="CONSTITUENCY_MGR" />;
       case 'broadcast':        return <BroadcastPanel hierarchy={hierarchy} />;
       case 'manage-users':     return <ManageUsers role="CONSTITUENCY_MGR" hierarchy={hierarchy} />;
       case 'ai-suggestions':   return <AICopilot hierarchy={hierarchy} />;

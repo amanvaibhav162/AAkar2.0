@@ -7,7 +7,9 @@ import https from "https";
 (https.globalAgent as any).keepAlive = true;
 (https.globalAgent as any).timeout = 300000;
 
-const nextConfig: NextConfig = {
+const nextConfig: any = {
+  reactStrictMode: false,
+  allowedDevOrigins: ['10.46.128.178'],
   async rewrites() {
     return [
       { source: '/api/:path*', destination: 'http://localhost:8000/api/:path*' },
