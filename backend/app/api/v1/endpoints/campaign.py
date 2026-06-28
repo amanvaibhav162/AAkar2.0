@@ -14,7 +14,7 @@ from app.infrastructure.db.neo4j_client import neo4j_client
 from app.domain.models.campaign import Campaign, CampaignVolunteer, ConstituencyCoverage
 from app.domain.models.user import User as AppUser
 from app.core.security import get_current_user
-from app.domain.whatsapp_service import send_text
+from app.domain.services.whatsapp_service import send_text
 
 logger = logging.getLogger(__name__)
 
