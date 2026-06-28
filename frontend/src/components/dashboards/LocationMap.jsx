@@ -71,6 +71,12 @@ function findMatchingFeature(geoData, level, code, locationName) {
     match = geoData.features.find(f => matchConstituency(f.properties.ac_name, locationName));
   } else if (level === 'mandal') {
     match = geoData.features.find(f => f.properties.mandal_code === code);
+  } else if (level === 'booth') {
+    const parts = (code || '').split('-');
+    const mandalCode = parts.slice(0, 3).join('-');
+    if (mandalCode) {
+      match = geoData?.features.find(f => f.properties.mandal_code === mandalCode);
+    }
   }
   if (!match) return null;
   return computeCentroid(match);
@@ -89,7 +95,7 @@ export default function LocationMap({ level, code, name }) {
   function geoFileFor(level) {
     if (level === 'state' || level === 'district') return '/delhi_districts.geojson';
     if (level === 'constituency') return '/delhi_constituencies.geojson';
-    if (level === 'mandal') return '/delhi_mandals.geojson';
+    if (level === 'mandal' || level === 'booth') return '/delhi_mandals.geojson';
     return null;
   }
 
@@ -132,7 +138,8 @@ export default function LocationMap({ level, code, name }) {
           if (centroid) {
             setLocation({ ...locData, latitude: centroid.lat, longitude: centroid.lng });
           } else {
-            setError('No location data for this area');
+            // Fallback: Delhi centroid as last resort
+            setLocation({ ...locData, latitude: 28.6139, longitude: 77.2089 });
           }
         }
         setGeoData(geoData);
@@ -367,6 +374,17 @@ export default function LocationMap({ level, code, name }) {
         map.fitBounds(circle.getBounds(), { padding: [50, 50] });
         layer = circle;
       }
+    } else if (level === 'booth') {
+      const circle = L.circle([location.latitude, location.longitude], {
+        radius: BOUNDARY_RADII.booth,
+        color: saffron,
+        weight: 3,
+        fillColor: '#D4A843',
+        fillOpacity: 0.3,
+      }).addTo(map);
+      circle.bindTooltip(`<strong>${location.name}</strong><br/>BOOTH`, { sticky: true });
+      map.fitBounds(circle.getBounds(), { padding: [50, 50] });
+      layer = circle;
     }
 
     geoLayerRef.current = layer;
@@ -431,7 +449,7 @@ export default function LocationMap({ level, code, name }) {
                   {level === 'state' ? 'Delhi NCT boundary' :
                    level === 'district' ? 'District polygon' :
                    level === 'constituency' ? 'Assembly constituency polygon' :
-                   level === 'mandal' ? 'Mandal boundary polygon' : 'Area'}
+                   level === 'mandal' ? 'Mandal boundary polygon' : 'Booth coverage area (500m radius)'}
                 </div>
               </div>
             </div>
