@@ -209,46 +209,10 @@ export default function LoginPage() {
                                             <FlatField label="Mandal" icon={<Building2 size={16} />} placeholder="Local Ward" value={mandalId} onChange={setMandalId} />
                                         </div>
                                         <FlatField label="Booth ID" icon={<Flag size={16} />} placeholder="Unique Code" value={boothId} onChange={setBoothId} />
-                                        
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                            <label style={{ fontSize: '9px', fontWeight: 900, color: slate400, textTransform: 'uppercase', letterSpacing: '0.1em', marginLeft: '4px' }}>System Role</label>
-                                            <select 
-                                                value={userType} 
-                                                onChange={(e) => setUserType(e.target.value)}
-                                                style={{ width: '100%', backgroundColor: slate50, border: `1px solid ${slate200}`, borderRadius: '12px', padding: '16px', fontSize: '12px', fontWeight: 700, outline: 'none' }}
-                                            >
-                                                <option value="BOOTH_PRESIDENT">Booth President</option>
-                                                <option value="MANDAL_MGR">Mandal Manager</option>
-                                                <option value="CONSTITUENCY_MGR">Constituency Manager</option>
-                                                <option value="DISTRICT_ADMIN">District Admin</option>
-                                                <option value="STATE_ADMIN">State Admin</option>
-                                                <option value="ELECTION_ADMIN">Election Admin</option>
-                                                <option value="VOLUNTEER">Field Worker / Volunteer</option>
-                                            </select>
-                                        </div>
                                     </>
                                 )}
                                 {view === 'login' && (
                                     <>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <label style={{ fontSize: '9px', fontWeight: 900, color: slate400, textTransform: 'uppercase', letterSpacing: '0.1em', marginLeft: '4px' }}>System Role</label>
-                                                
-                                            </div>
-                                            <select 
-                                                value={userType} 
-                                                onChange={(e) => setUserType(e.target.value)}
-                                                style={{ width: '100%', backgroundColor: slate50, border: `1px solid ${slate200}`, borderRadius: '12px', padding: '16px', fontSize: '12px', fontWeight: 700, outline: 'none' }}
-                                            >
-                                                <option value="BOOTH_PRESIDENT">Booth President</option>
-                                                <option value="MANDAL_MGR">Mandal Manager</option>
-                                                <option value="CONSTITUENCY_MGR">Constituency Manager</option>
-                                                <option value="DISTRICT_ADMIN">District Admin</option>
-                                                <option value="STATE_ADMIN">State Admin</option>
-                                                <option value="ELECTION_ADMIN">Election Admin</option>
-                                                <option value="VOLUNTEER">Field Worker / Volunteer</option>
-                                            </select>
-                                        </div>
                                         <FlatField label="Authorized Email" icon={<User size={16} />} placeholder="Email address" value={emailInput} onChange={setEmailInput} />
                                     </>
                                 )}
@@ -315,10 +279,12 @@ export default function LoginPage() {
                     </form>
 
                     <footer style={{ marginTop: '48px', textAlign: 'center' }}>
-                        <p style={{ fontSize: '10px', color: slate400, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', lineHeight: 1.6 }}>
-                            © 2026 <img src={logo?.src || logo} alt="Logo" style={{ height: '14px', verticalAlign: 'middle', margin: '0 4px', filter: 'brightness(0)' }} /> • National Data Network <br />
-                            <span style={{ color: gold }}>{portalMode === 'election' ? 'ELECTION CONTROL CENTER' : 'SECURE INTELLIGENCE NODE'}</span>
-                        </p>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '8px' }}>
+                            <span style={{ fontSize: '10px', color: slate400, fontWeight: 700, letterSpacing: '0.1em' }}>© 2026</span>
+                            <img src={logo?.src || logo} alt="Logo" style={{ height: '16px', filter: 'brightness(0)' }} />
+                            <span style={{ fontSize: '10px', color: slate400, fontWeight: 700, letterSpacing: '0.1em' }}>• National Data Network</span>
+                        </div>
+                        <span style={{ fontSize: '10px', color: gold, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{portalMode === 'election' ? 'ELECTION CONTROL CENTER' : 'SECURE INTELLIGENCE NODE'}</span>
                     </footer>
                 </div>
             </div>
