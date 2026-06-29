@@ -65,59 +65,68 @@ export default function AICopilot({ hierarchy }) {
         <div style={{ 
             display: 'flex', 
             flexDirection: 'column', 
-            height: 'calc(100vh - 220px)', 
-            background: 'white', 
-            borderRadius: '12px', 
-            border: '1.5px solid var(--gray-200)', 
+            height: '100%', 
+            minHeight: 'calc(100vh - 80px)',
+            background: '#f8fafc', 
             overflow: 'hidden', 
-            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
-            margin: '0 auto',
-            maxWidth: '1200px'
+            width: '100%'
         }}>
             
             {/* Premium Header */}
             <div style={{ 
-                padding: '16px 24px', 
-                background: 'linear-gradient(135deg, var(--blue-600) 0%, var(--blue-700) 100%)', 
-                borderBottom: '1px solid rgba(255,255,255,0.1)', 
+                padding: '20px 28px', 
+                background: 'var(--navy-900)', 
+                borderBottom: '1px solid rgba(255,255,255,0.05)', 
                 display: 'flex', 
                 alignItems: 'center', 
-                justifyContent: 'space-between'
+                justifyContent: 'space-between',
+                position: 'relative',
+                overflow: 'hidden'
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {/* Decorative background element */}
+                <div style={{ position: 'absolute', top: '-50%', right: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(212, 168, 67, 0.15) 0%, transparent 70%)', pointerEvents: 'none' }} />
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', position: 'relative', zIndex: 1 }}>
                     <div style={{ 
-                        width: '38px', 
-                        height: '38px', 
-                        background: 'rgba(212, 168, 67, 0.15)', 
-                        borderRadius: '10px', 
+                        width: '44px', 
+                        height: '44px', 
+                        background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(212, 168, 67, 0.05) 100%)', 
+                        borderRadius: '12px', 
                         display: 'flex', 
                         alignItems: 'center', 
                         justifyContent: 'center',
-                        border: '1px solid rgba(212, 168, 67, 0.3)'
+                        border: '1px solid rgba(245, 158, 11, 0.4)',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
                     }}>
-                        <Bot size={22} color="var(--amber-500)" />
+                        <Bot size={24} color="#fbbf24" />
                     </div>
                     <div>
-                        <h2 style={{ fontSize: '15px', fontWeight: 800, color: 'white', margin: 0, letterSpacing: '-0.01em' }}>AI Strategy Assistant</h2>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 8px #22c55e' }} />
-                            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        <h2 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff', margin: 0, letterSpacing: '0.02em' }}>AI Strategy Assistant</h2>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 10px #22c55e', animation: 'pulse 2s infinite' }} />
+                            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.85)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                 Intelligence Node Active
                             </span>
                         </div>
                     </div>
                 </div>
                 <div style={{ 
-                    padding: '6px 12px', 
-                    background: 'rgba(255,255,255,0.08)', 
-                    borderRadius: '6px', 
-                    fontSize: '10px', 
+                    padding: '8px 16px', 
+                    background: 'rgba(245, 158, 11, 0.15)', 
+                    borderRadius: '20px', 
+                    fontSize: '12px', 
                     fontWeight: 800, 
-                    color: 'var(--amber-500)',
+                    color: '#fbbf24',
                     textTransform: 'uppercase',
                     letterSpacing: '0.05em',
-                    border: '1px solid rgba(255,255,255,0.1)'
+                    border: '1px solid rgba(245, 158, 11, 0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    position: 'relative',
+                    zIndex: 1
                 }}>
+                    <Sparkles size={14} />
                     Ready for Analysis
                 </div>
             </div>
@@ -125,90 +134,137 @@ export default function AICopilot({ hierarchy }) {
             {/* Chat Area */}
             <div style={{ 
                 flex: 1, 
-                padding: '24px', 
+                padding: '32px', 
                 overflowY: 'auto', 
-                backgroundColor: '#f1f5f9', 
                 display: 'flex', 
                 flexDirection: 'column', 
-                gap: '20px' 
+                gap: '24px',
+                backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)',
+                backgroundSize: '24px 24px'
             }}>
                 {messages.map(msg => (
                     <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
-                        <div style={{ 
-                            maxWidth: '80%', 
-                            padding: '14px 18px', 
-                            borderRadius: '12px',
-                            backgroundColor: msg.role === 'user' ? 'var(--blue-600)' : 'white',
-                            color: msg.role === 'user' ? 'white' : 'var(--gray-900)',
-                            boxShadow: msg.role === 'user' ? '0 4px 12px rgba(26, 39, 68, 0.15)' : '0 1px 3px rgba(0, 0, 0, 0.05)',
-                            border: msg.role === 'user' ? 'none' : '1px solid var(--gray-200)',
-                            borderTopRightRadius: msg.role === 'user' ? 2 : '12px',
-                            borderTopLeftRadius: msg.role === 'ai' ? 2 : '12px',
-                            fontSize: '14px',
-                            lineHeight: 1.6,
-                            fontWeight: 500,
-                            position: 'relative'
-                        }}>
-                            {msg.text}
+                        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px', maxWidth: '85%' }}>
+                            {msg.role === 'ai' && (
+                                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--navy-900)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginBottom: '4px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
+                                    <Bot size={18} color="#fbbf24" />
+                                </div>
+                            )}
+                            
+                            <div style={{ 
+                                padding: '16px 20px', 
+                                borderRadius: '16px',
+                                backgroundColor: msg.role === 'user' ? 'var(--blue-600)' : '#ffffff',
+                                color: msg.role === 'user' ? '#ffffff' : '#1e293b',
+                                boxShadow: msg.role === 'user' ? '0 8px 16px -4px rgba(37, 99, 235, 0.3)' : '0 4px 12px rgba(0, 0, 0, 0.06)',
+                                border: msg.role === 'user' ? 'none' : '1px solid #e2e8f0',
+                                borderBottomRightRadius: msg.role === 'user' ? 4 : '16px',
+                                borderBottomLeftRadius: msg.role === 'ai' ? 4 : '16px',
+                                fontSize: '15px',
+                                lineHeight: 1.6,
+                                fontWeight: 500
+                            }}>
+                                {msg.text}
+                            </div>
+                            
+                            {msg.role === 'user' && (
+                                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginBottom: '4px', border: '1px solid #cbd5e1' }}>
+                                    <Users size={16} color="#475569" />
+                                </div>
+                            )}
                         </div>
                     </div>
                 ))}
                 {isThinking && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--gray-500)', fontSize: '13px', fontWeight: 600, padding: '8px' }}>
-                        <div className="pulse" style={{ width: '18px', height: '18px', background: 'var(--gray-200)', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Bot size={12} />
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                        <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--navy-900)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginBottom: '4px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
+                            <Bot size={18} color="#fbbf24" />
                         </div>
-                        <span className="pulse">Synthesizing strategy...</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#ffffff', padding: '14px 20px', borderRadius: '16px', borderBottomLeftRadius: 4, border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.04)' }}>
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                                <div className="bounce" style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--blue-500)', animationDelay: '0s' }} />
+                                <div className="bounce" style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--blue-500)', animationDelay: '0.2s' }} />
+                                <div className="bounce" style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--blue-500)', animationDelay: '0.4s' }} />
+                            </div>
+                            <span style={{ fontSize: '14px', color: '#475569', fontWeight: 600 }}>Synthesizing strategy...</span>
+                        </div>
                     </div>
                 )}
             </div>
 
             {/* Input Area */}
-            <div style={{ padding: '20px 24px', background: 'white', borderTop: '1px solid var(--gray-200)' }}>
+            <div style={{ padding: '24px 32px', background: '#ffffff', borderTop: '1px solid #e2e8f0' }}>
                 <div style={{ 
                     display: 'flex', 
                     alignItems: 'center', 
                     background: '#f8fafc', 
-                    border: '1.5px solid var(--gray-200)', 
-                    borderRadius: '12px', 
-                    padding: '10px 16px', 
-                    gap: '14px',
-                    transition: 'all 0.2s ease'
-                }}>
+                    border: '1.5px solid #cbd5e1', 
+                    borderRadius: '24px', 
+                    padding: '8px 8px 8px 24px', 
+                    gap: '16px',
+                    transition: 'all 0.2s ease',
+                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)'
+                }}
+                className="input-container-focus"
+                >
                     <input 
                         type="text" 
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                         placeholder="Ask about booth metrics, volunteer activity, or district strategy..."
-                        style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', fontSize: '15px', fontWeight: 500, color: 'var(--gray-900)' }}
+                        style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', fontSize: '15px', fontWeight: 500, color: '#0f172a' }}
                     />
                     <button 
                         onClick={handleSend}
                         disabled={!input.trim() || isThinking}
                         style={{ 
-                            background: 'var(--blue-600)', 
-                            color: 'white', 
+                            background: input.trim() && !isThinking ? 'var(--blue-600)' : '#cbd5e1', 
+                            color: '#ffffff', 
                             border: 'none', 
-                            width: '36px', 
-                            height: '36px', 
-                            borderRadius: '8px', 
+                            width: '44px', 
+                            height: '44px', 
+                            borderRadius: '50%', 
                             display: 'flex', 
                             alignItems: 'center', 
                             justifyContent: 'center', 
                             cursor: input.trim() && !isThinking ? 'pointer' : 'not-allowed', 
-                            opacity: input.trim() && !isThinking ? 1 : 0.5,
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                            transition: 'all 0.2s',
+                            boxShadow: input.trim() && !isThinking ? '0 4px 12px rgba(37, 99, 235, 0.4)' : 'none'
                         }}
+                        className={input.trim() && !isThinking ? "hover-scale" : ""}
                     >
-                        <Send size={16} />
+                        <Send size={18} style={{ marginLeft: '-2px' }} />
                     </button>
+                </div>
+                
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '24px', marginTop: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
+                        <TrendingUp size={14} /> Predictive Analytics
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
+                        <AlertTriangle size={14} /> Risk Assessment
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
+                        <Users size={14} /> Sentiment Tracking
+                    </div>
                 </div>
             </div>
 
             <style dangerouslySetInnerHTML={{__html: `
-                .pulse { animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+                .pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
                 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+                
+                .bounce { animation: bounce 1.4s infinite ease-in-out both; }
+                @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+                
+                .hover-scale:hover { transform: scale(1.05); }
+                
+                .input-container-focus:focus-within {
+                    border-color: var(--blue-400) !important;
+                    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+                    background: white !important;
+                }
             `}} />
         </div>
     );

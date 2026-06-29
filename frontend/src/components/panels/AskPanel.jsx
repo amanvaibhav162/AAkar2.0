@@ -162,12 +162,12 @@ const AskPanel = () => {
     setError(null);
     setResult(null);
     setSelectedNode(null);
-    
+
     let targetQuestion = question.trim();
     if (currentUser?.role === 'dm') {
       targetQuestion = `For the district of ${currentUser.displayName}, ${targetQuestion}`;
     }
-    
+
     try {
       const res = await fetch(API_URL, {
         method: 'POST',
