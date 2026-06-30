@@ -13,6 +13,7 @@ export default function LoginPage() {
     const [view, setView] = useState('login');
     const [portalMode, setPortalMode] = useState('election');
     const [userType, setUserType] = useState('BOOTH_PRESIDENT');
+    const [selectedRole, setSelectedRole] = useState('State Admin');
 
     const navy = "#0f172a";
     const gold = "#D4AF37";
@@ -112,11 +113,31 @@ export default function LoginPage() {
                 justifyContent: 'center',
                 padding: '0 80px',
                 position: 'relative',
-                borderRight: `1px solid ${gold}22`
+                borderRight: `1px solid ${gold}22`,
+                overflow: 'hidden'
             }} className="lg-flex">
                 <style dangerouslySetInnerHTML={{ __html: `@media (min-width: 1024px) { .lg-flex { display: flex !important; } }` }} />
 
-                <div style={{ maxWidth: '448px' }}>
+                <video
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        zIndex: 0,
+                        opacity: 0.35
+                    }}
+                >
+                    <source src="/Background.mp4" type="video/mp4" />
+                </video>
+
+                <div style={{ maxWidth: '448px', position: 'relative', zIndex: 1 }}>
                     <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '64px' }}>
                         <img src={logo?.src || logo} alt="Logo" style={{ height: '120px', objectFit: 'contain', objectPosition: 'left', display: 'block', marginBottom: '32px' }} />
                         <div style={{ height: '6px', width: '80px', backgroundColor: gold, marginBottom: '24px' }} />
@@ -213,6 +234,16 @@ export default function LoginPage() {
                                 )}
                                 {view === 'login' && (
                                     <>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                            <label style={{ fontSize: '9px', fontWeight: 900, color: slate400, textTransform: 'uppercase', letterSpacing: '0.1em', marginLeft: '4px' }}>Role</label>
+                                            <select value={selectedRole} onChange={e => setSelectedRole(e.target.value)} style={{ width: '100%', backgroundColor: slate50, border: `1px solid ${slate200}`, borderRadius: '12px', padding: '16px', fontSize: '12px', fontWeight: 700, outline: 'none', transition: 'all 0.2s ease', cursor: 'pointer' }} onFocus={(e) => e.target.style.borderColor = "#D4AF37"} onBlur={(e) => e.target.style.borderColor = slate200}>
+                                                <option value="State Admin">State Admin</option>
+                                                <option value="District Admin">District Admin</option>
+                                                <option value="Constituency Manager">Constituency Manager</option>
+                                                <option value="Mandal Manager">Mandal Manager</option>
+                                                <option value="Booth Manager">Booth Manager</option>
+                                            </select>
+                                        </div>
                                         <FlatField label="Authorized Email" icon={<User size={16} />} placeholder="Email address" value={emailInput} onChange={setEmailInput} />
                                     </>
                                 )}
