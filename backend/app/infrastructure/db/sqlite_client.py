@@ -66,22 +66,12 @@ def init_db():
         except Exception:
             pass
 
-    # Ensure all complaint columns exist (migration-safe ADD COLUMN)
-    _complaint_cols = [
-        ("constituency",    "VARCHAR NOT NULL DEFAULT ''"),
-        ("epic",            "VARCHAR NOT NULL DEFAULT ''"),
-        ("district_id",     "VARCHAR NOT NULL DEFAULT ''"),
-        ("constituency_id", "VARCHAR NOT NULL DEFAULT ''"),
-        ("mandal_id",       "VARCHAR NOT NULL DEFAULT ''"),
-        ("state_id",        "VARCHAR NOT NULL DEFAULT ''"),
-        ("priority",        "VARCHAR NOT NULL DEFAULT 'LOW'"),
-    ]
-    for col_name, col_type in _complaint_cols:
-        try:
-            with engine.begin() as conn:
-                conn.execute(text(f"ALTER TABLE complaint ADD COLUMN {col_name} {col_type}"))
-        except Exception:
-            pass  # column already exists — safe to ignore
+    # Ensure constituency column exists on complaint table
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE complaint ADD COLUMN constituency VARCHAR NOT NULL DEFAULT ''"))
+    except Exception:
+        pass
 
 
 def get_session():
