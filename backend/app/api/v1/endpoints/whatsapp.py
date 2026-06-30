@@ -73,7 +73,7 @@ GRAPH_API_URL = f"https://graph.facebook.com/v20.0/{PHONE_NUMBER_ID}/messages"
 
 
 @router.post("/simulate")
-async def simulate_whatsapp(body: dict, _user=Depends(get_current_user)):
+async def simulate_whatsapp(body: dict):
     """
     Simulates a WhatsApp message. Used by the frontend WhatsApp Simulator.
     Accepts { phone, message } for text, or { phone, is_image: true, image_data: "<base64>" }
