@@ -491,7 +491,6 @@ async def receive_whatsapp_message(request: Request):
 
                     session.delete(state)
                     session.commit()
-                    
                     try:
                         from app.domain.services.volunteer_sync import append_volunteer_to_json
                         # Re-fetch the volunteer object after commit so it has an id
