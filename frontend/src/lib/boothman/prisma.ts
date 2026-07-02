@@ -12,6 +12,12 @@ function getDb() {
 
 function saveDb(db: any) {
   fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
+  
+  const TASKS_PATH = path.join(process.cwd(), 'prisma/tasks.json');
+  const VOLS_PATH = path.join(process.cwd(), 'prisma/volunteers.json');
+  
+  fs.writeFileSync(TASKS_PATH, JSON.stringify(db.task || [], null, 2));
+  fs.writeFileSync(VOLS_PATH, JSON.stringify(db.volunteer || [], null, 2));
 }
 
 function createMockModel(modelName: string) {
@@ -44,7 +50,19 @@ function createMockModel(modelName: string) {
             newItem.volunteers = db.volunteer.filter((v: any) => v.assignedBoothId === newItem.id);
           }
           if (args.include.tasks && modelName === 'booth') {
-            newItem.tasks = db.task.filter((t: any) => t.boothId === newItem.id);
+            let tasks = db.task.filter((t: any) => t.boothId === newItem.id);
+            if (typeof args.include.tasks === 'object') {
+              if (args.include.tasks.include?.assignee) {
+                tasks = tasks.map((t: any) => ({
+                  ...t,
+                  assignee: db.volunteer.find((v: any) => v.id === t.assigneeId) || null
+                }));
+              }
+              if (args.include.tasks.orderBy?.createdAt === 'desc') {
+                tasks.sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+              }
+            }
+            newItem.tasks = tasks;
           }
           return newItem;
         });
@@ -77,7 +95,19 @@ function createMockModel(modelName: string) {
           newItem.volunteers = db.volunteer.filter((v: any) => v.assignedBoothId === newItem.id);
         }
         if (args.include.tasks && modelName === 'booth') {
-          newItem.tasks = db.task.filter((t: any) => t.boothId === newItem.id);
+          let tasks = db.task.filter((t: any) => t.boothId === newItem.id);
+          if (typeof args.include.tasks === 'object') {
+            if (args.include.tasks.include?.assignee) {
+              tasks = tasks.map((t: any) => ({
+                ...t,
+                assignee: db.volunteer.find((v: any) => v.id === t.assigneeId) || null
+              }));
+            }
+            if (args.include.tasks.orderBy?.createdAt === 'desc') {
+              tasks.sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+            }
+          }
+          newItem.tasks = tasks;
         }
       }
       return newItem;
@@ -158,8 +188,8 @@ class MockPrismaClient {
   attendance = createMockModel('attendance');
 }
 
-const globalForPrisma = global as unknown as { prismaBoothmanInstance: MockPrismaClient }
+const globalForPrisma = global as unknown as { prismaBoothmanInstance4: MockPrismaClient }
 
-export const prisma = globalForPrisma.prismaBoothmanInstance || new MockPrismaClient()
+export const prisma = globalForPrisma.prismaBoothmanInstance4 || new MockPrismaClient()
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prismaBoothmanInstance = prisma
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prismaBoothmanInstance4 = prisma

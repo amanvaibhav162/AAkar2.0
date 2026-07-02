@@ -39,16 +39,17 @@ export default async function CoordinatorDashboard() {
     return <div className="p-8">No booth assigned or location data missing.</div>;
   }
 
-  const activeVolunteers = booth.volunteers.filter((v: any) => v.status === 'APPROVED');
+  const activeVolunteers = booth.volunteers.filter((v: any) => v.status === 'APPROVED' || v.status === 'ACTIVE');
   const pendingTasks = booth.tasks.filter((t: any) => t.status !== 'COMPLETED');
 
-  const allAvailableVolunteers = await prisma.volunteer.findMany({
+  const allAvailableVolunteersRaw = await prisma.volunteer.findMany({
     where: { 
-      status: 'APPROVED',
       lat: { not: null },
       lng: { not: null }
     }
   });
+  
+  const allAvailableVolunteers = allAvailableVolunteersRaw.filter((v: any) => v.status === 'APPROVED' || v.status === 'ACTIVE');
 
   // Calculate distance for all volunteers
   const volunteersWithDistance = allAvailableVolunteers.map((v: any) => ({
@@ -60,6 +61,12 @@ export default async function CoordinatorDashboard() {
   const nearestVolunteers = volunteersWithDistance
     .sort((a, b) => a.distanceKm - b.distanceKm)
     .slice(0, 20);
+
+  // Combine assigned active volunteers with nearest available volunteers for the task assignment dropdown
+  const dropdownVolunteers = [
+    ...activeVolunteers,
+    ...nearestVolunteers.filter((nv: any) => !activeVolunteers.some((av: any) => av.id === nv.id))
+  ];
 
   // Transform data for map
   const mapBooths = [{
@@ -267,7 +274,7 @@ export default async function CoordinatorDashboard() {
           <div className="card p-0 bg-transparent border-0 shadow-none">
             <TaskBoard 
               tasks={booth.tasks} 
-              volunteers={nearestVolunteers} 
+              volunteers={dropdownVolunteers} 
             />
           </div>
         </div>

@@ -12,12 +12,13 @@ GRAPH_API_URL = f"https://graph.facebook.com/v20.0/{PHONE_NUMBER_ID}/messages"
 # Simulation mode state
 _simulated_replies = []
 _sim_media_bytes = None
+_force_simulate = False
 _IS_SIMULATION = WHATSAPP_TOKEN in ("dummy_token", "", "your_meta_whatsapp_access_token")
 
 async def send_text(to: str, message: str) -> dict:
     global _simulated_replies
     _simulated_replies.append(message)
-    if _IS_SIMULATION:
+    if _IS_SIMULATION or _force_simulate:
         return {"status": "simulated", "to": to, "message": message}
 
     headers = {
@@ -37,6 +38,11 @@ async def send_text(to: str, message: str) -> dict:
     return resp.json()
 
 async def send_template(to: str, template_name: str, lang_code: str = "en_US") -> dict:
+    global _simulated_replies, _force_simulate, _IS_SIMULATION
+    _simulated_replies.append(f"[TEMPLATE: {template_name}]")
+    if _IS_SIMULATION or _force_simulate:
+        return {"status": "simulated", "to": to, "template": template_name}
+
     headers = {
         "Authorization": f"Bearer {WHATSAPP_TOKEN}",
         "Content-Type": "application/json",
@@ -54,8 +60,8 @@ async def send_template(to: str, template_name: str, lang_code: str = "en_US") -
     return resp.json()
 
 async def download_media(media_id: str) -> bytes:
-    global _sim_media_bytes
-    if _IS_SIMULATION and _sim_media_bytes is not None:
+    global _sim_media_bytes, _force_simulate, _IS_SIMULATION
+    if (_IS_SIMULATION or _force_simulate) and _sim_media_bytes is not None:
         data = _sim_media_bytes
         _sim_media_bytes = None
         return data

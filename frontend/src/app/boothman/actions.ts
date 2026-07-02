@@ -93,6 +93,38 @@ export async function createTaskAction(formData: FormData) {
     }
   });
 
+  // Sync to Python Backend's SQLite DB for the WhatsApp Simulator
+  if (assigneeId) {
+    try {
+      const vol = await prisma.volunteer.findUnique({ where: { id: parseInt(assigneeId) } });
+      const booth = await prisma.booth.findUnique({ where: { id: boothId } });
+      const partNumber = booth?.partNumber || "AC38-001";
+      
+      if (vol && vol.phone) {
+        // Fetch SQLite volunteers
+        const pythonVols = await fetch('http://127.0.0.1:8000/api/v1/volunteers').then(r => r.json());
+        const matched = pythonVols.find((v: any) => v.phone === vol.phone);
+        
+        if (matched) {
+          // Send to SQLite
+          const res = await fetch('http://127.0.0.1:8000/api/v1/tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              volunteer_id: matched.id,
+              booth_id: partNumber,
+              title: title,
+              description: description || ""
+            })
+          });
+          if (!res.ok) console.error("FastAPI returned error", await res.text());
+        }
+      }
+    } catch (err) {
+      console.error("Failed to sync task to python backend:", err);
+    }
+  }
+
   return { success: true };
 }
 

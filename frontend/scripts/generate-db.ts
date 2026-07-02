@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-const boothsData = JSON.parse(fs.readFileSync(path.join(__dirname, '../prisma/booths.json'), 'utf-8'));
+const boothsData = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'prisma/booths.json'), 'utf-8'));
 
 const FIRST_NAMES = ["Amit", "Rahul", "Priya", "Sneha", "Vikram", "Anjali", "Rohan", "Neha", "Karan", "Pooja", "Arjun", "Kavita", "Suresh", "Meena", "Ramesh", "Deepa", "Manish", "Sunita", "Rajesh", "Geeta"];
 const LAST_NAMES = ["Sharma", "Singh", "Kumar", "Gupta", "Verma", "Patel", "Das", "Joshi", "Mishra", "Yadav", "Chauhan", "Reddy"];
@@ -53,7 +53,7 @@ for (let i = 0; i < boothsData.length; i++) {
     partNumber: partNumberStr,
     name: jsonBooth.polling_station,
     address: jsonBooth.polling_station,
-    password: "password123",
+    password: "123456",
     lat: jsonBooth.latitude,
     lng: jsonBooth.longitude,
     requiredVols: 5,
@@ -64,8 +64,8 @@ for (let i = 0; i < boothsData.length; i++) {
 }
 
 // 2. Load Real Volunteers
-if (fs.existsSync(path.join(__dirname, '../prisma/volunteers.json'))) {
-  const vols = JSON.parse(fs.readFileSync(path.join(__dirname, '../prisma/volunteers.json'), 'utf-8'));
+if (fs.existsSync(path.join(process.cwd(), 'prisma/volunteers.json'))) {
+  const vols = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'prisma/volunteers.json'), 'utf-8'));
   for (const v of vols) {
     // Find the booth with matching partNumber
     const booth = db.booth.find(b => b.partNumber === v.partNumber);
@@ -74,7 +74,7 @@ if (fs.existsSync(path.join(__dirname, '../prisma/volunteers.json'))) {
       name: v.name,
       phone: v.phone,
       aadhaar: v.aadhaar,
-      password: "password123", // Set a default password
+      password: "123456", // Set a default password
       status: v.status,
       lat: v.lat,
       lng: v.lng,
@@ -86,8 +86,8 @@ if (fs.existsSync(path.join(__dirname, '../prisma/volunteers.json'))) {
 }
 
 // 3. Load Real Tasks
-if (fs.existsSync(path.join(__dirname, '../prisma/tasks.json'))) {
-  const tasks = JSON.parse(fs.readFileSync(path.join(__dirname, '../prisma/tasks.json'), 'utf-8'));
+if (fs.existsSync(path.join(process.cwd(), 'prisma/tasks.json'))) {
+  const tasks = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'prisma/tasks.json'), 'utf-8'));
   for (const t of tasks) {
     const booth = db.booth.find(b => b.partNumber === t.partNumber);
     if (booth) {
@@ -105,5 +105,5 @@ if (fs.existsSync(path.join(__dirname, '../prisma/tasks.json'))) {
   }
 }
 
-fs.writeFileSync(path.join(__dirname, '../prisma/db.json'), JSON.stringify(db, null, 2));
+fs.writeFileSync(path.join(process.cwd(), 'prisma/db.json'), JSON.stringify(db, null, 2));
 console.log('Successfully generated db.json with real data');

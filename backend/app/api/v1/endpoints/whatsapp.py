@@ -80,6 +80,7 @@ async def simulate_whatsapp(body: dict):
     """
     ws_service._simulated_replies = []
     ws_service._sim_media_bytes = None
+    ws_service._force_simulate = True
 
     phone = body.get("phone", "917696138229")
 
@@ -141,6 +142,7 @@ async def simulate_whatsapp(body: dict):
 
     replies = list(ws_service._simulated_replies)
     ws_service._simulated_replies = []
+    ws_service._force_simulate = False
     
     with Session(engine) as session:
         state_record = session.exec(

@@ -65,7 +65,6 @@ export default function LeafletMap({
   useEffect(() => {
     if (typeof window === 'undefined' || !mapContainerRef.current) return;
 
-    // We use dynamic import for leaflet to avoid SSR issues with window
     import('leaflet').then((L) => {
       if (!mapRef.current && mapContainerRef.current) {
         const map = L.map(mapContainerRef.current, {
@@ -82,20 +81,17 @@ export default function LeafletMap({
         mapRef.current = map;
         layerGroupRef.current = L.layerGroup().addTo(map);
       } else {
-        // Just update center if it changes significantly
         mapRef.current.setView([centerLat, centerLng], zoom);
       }
 
-      // Clear existing markers
       if (layerGroupRef.current) {
         layerGroupRef.current.clearLayers();
       }
 
-      // Draw booth coverage boundary polygon (convex hull of all house points)
+      // Draw booth boundary polygon
       if (houses.length >= 3) {
         const pts = houses.filter(h => h.lat && h.lng).map(h => [h.lat!, h.lng!] as [number, number]);
         
-        // Simple convex hull (gift wrapping)
         function crossProduct(O: number[], A: number[], B: number[]) {
           return (A[0] - O[0]) * (B[1] - O[1]) - (A[1] - O[1]) * (B[0] - O[0]);
         }
@@ -124,75 +120,80 @@ export default function LeafletMap({
             color: '#D4A843',
             weight: 2,
             fillColor: '#D4A843',
-            fillOpacity: 0.08,
+            fillOpacity: 0.07,
             dashArray: '6 4',
           }).addTo(layerGroupRef.current);
         }
       }
 
-      // Add Booth Markers
+      // ── BOOTH Markers ──────────────────────────────────────────
       booths.forEach(booth => {
         if (!booth.lat || !booth.lng) return;
 
         const iconHtml = `
-          <div style="width:36px;height:36px;border-radius:50%;background:#04122e;border:3px solid #D4A843;box-shadow:0 4px 10px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;font-size:16px;">
-            🏢
+          <div style="position:relative;width:44px;height:52px;display:flex;flex-direction:column;align-items:center;">
+            <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#04122e,#0f2860);border:3px solid #D4A843;box-shadow:0 6px 20px rgba(212,168,67,0.45),0 2px 6px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;font-size:20px;">🏢</div>
+            <div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:11px solid #D4A843;margin-top:-2px;"></div>
           </div>
         `;
 
         const icon = L.divIcon({
           html: iconHtml,
-          className: 'custom-booth-icon',
-          iconSize: [36, 36],
-          iconAnchor: [18, 18],
-          popupAnchor: [0, -18]
+          className: '',
+          iconSize: [44, 52],
+          iconAnchor: [22, 52],
+          popupAnchor: [0, -54]
         });
 
         const marker = L.marker([booth.lat, booth.lng], { icon });
         marker.bindPopup(`
-          <div style="font-family: sans-serif; padding: 4px;">
-            <div style="font-size: 10px; font-weight: bold; color: #D4A843; text-transform: uppercase;">Polling Booth</div>
-            <h4 style="margin: 4px 0; color: #04122e; font-size: 14px; font-weight: 900;">${booth.partNumber}</h4>
-            <div style="font-size: 11px; color: #64748b; line-height: 1.3; max-width: 200px;">${booth.name}</div>
+          <div style="font-family:system-ui,sans-serif;padding:8px 4px;min-width:160px;">
+            <div style="font-size:9px;font-weight:900;color:#D4A843;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">📍 Polling Booth</div>
+            <div style="font-size:15px;font-weight:900;color:#04122e;margin-bottom:4px;">${booth.partNumber}</div>
+            <div style="font-size:11px;color:#64748b;line-height:1.4;max-width:200px;">${booth.name}</div>
           </div>
         `);
         layerGroupRef.current.addLayer(marker);
       });
 
-      // Add Volunteer Markers
+      // ── VOLUNTEER Markers ──────────────────────────────────────
       volunteers.forEach(vol => {
         if (!vol.lat || !vol.lng) return;
 
-        const isApproved = vol.status === 'APPROVED';
-        const color = isApproved ? '#22c55e' : '#f59e0b';
-        
+        const isActive = vol.status === 'APPROVED' || vol.status === 'ACTIVE';
+        const color = isActive ? '#16a34a' : '#d97706';
+        const bgColor = isActive ? '#dcfce7' : '#fef3c7';
+        const initials = (vol.name || '?').split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
+
+        const pulseStyle = isActive
+          ? `<div style="position:absolute;top:0;left:0;width:38px;height:38px;border-radius:50%;background:${color};opacity:0.2;animation:volpulse 2.2s ease-out infinite;pointer-events:none;"></div>`
+          : '';
+
         const iconHtml = `
-          <div style="position: relative; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
-            <div style="position: absolute; width: 100%; height: 100%; background-color: ${color}; opacity: 0.4; border-radius: 50%; ${isApproved ? 'animation: pulse 2s infinite;' : ''}"></div>
-            <div style="width: 14px; height: 14px; background-color: ${color}; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>
+          <div style="position:relative;width:38px;height:46px;display:flex;flex-direction:column;align-items:center;">
+            ${pulseStyle}
+            <div style="position:relative;z-index:1;width:38px;height:38px;border-radius:50%;background:${bgColor};border:2.5px solid ${color};box-shadow:0 3px 12px rgba(0,0,0,0.2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:${color};font-family:system-ui,sans-serif;">${initials}</div>
+            <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:9px solid ${color};margin-top:-2px;"></div>
           </div>
-          <style>
-            @keyframes pulse {
-              0% { transform: scale(1); opacity: 0.8; }
-              100% { transform: scale(2.5); opacity: 0; }
-            }
-          </style>
+          <style>.volpulse-kf{animation:volpulse 2.2s ease-out infinite;}@keyframes volpulse{0%{transform:scale(1);opacity:0.3;}100%{transform:scale(2.4);opacity:0;}}</style>
         `;
 
         const icon = L.divIcon({
           html: iconHtml,
-          className: 'custom-vol-icon',
-          iconSize: [24, 24],
-          iconAnchor: [12, 12],
-          popupAnchor: [0, -12]
+          className: '',
+          iconSize: [38, 46],
+          iconAnchor: [19, 46],
+          popupAnchor: [0, -48]
         });
 
         const marker = L.marker([vol.lat, vol.lng], { icon });
         marker.bindPopup(`
-          <div style="font-family: sans-serif; padding: 4px;">
-            <h4 style="margin: 0 0 4px 0; color: #04122e; font-size: 13px; font-weight: 800;">${vol.name}</h4>
-            <div style="font-size: 11px; color: #2563eb; font-weight: bold; margin-bottom: 4px;">📞 ${vol.phone}</div>
-            <div style="display: inline-block; padding: 2px 6px; font-weight: 800; font-size: 9px; color: white; background: ${color}; text-transform: uppercase; border-radius: 2px;">
+          <div style="font-family:system-ui,sans-serif;padding:8px 4px;min-width:150px;">
+            <div style="font-size:9px;font-weight:900;color:${color};text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">👤 Volunteer</div>
+            <div style="font-size:14px;font-weight:900;color:#04122e;margin-bottom:4px;">${vol.name}</div>
+            <div style="font-size:11px;color:#2563eb;margin-bottom:8px;">📞 ${vol.phone}</div>
+            <div style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;font-weight:800;font-size:9px;color:${color};background:${bgColor};border:1.5px solid ${color};text-transform:uppercase;border-radius:20px;letter-spacing:0.05em;">
+              <div style="width:6px;height:6px;border-radius:50%;background:${color};"></div>
               ${vol.status}
             </div>
           </div>
@@ -200,44 +201,46 @@ export default function LeafletMap({
         layerGroupRef.current.addLayer(marker);
       });
 
-      // Add Task Markers
+      // ── TASK Markers ───────────────────────────────────────────
       tasks.forEach((task, index) => {
         if (!task.lat || !task.lng) return;
 
-        // Offset tasks slightly so they don't exactly overlap with booths
         const offsetLat = task.lat + 0.001 * Math.cos(index * 2);
         const offsetLng = task.lng + 0.001 * Math.sin(index * 2);
 
-        const color = task.status === 'COMPLETED' ? '#10b981' : task.status === 'IN_PROGRESS' ? '#3b82f6' : '#ef4444';
-        
+        const isCompleted = task.status === 'COMPLETED';
+        const isInProgress = task.status === 'IN_PROGRESS';
+        const color = isCompleted ? '#059669' : isInProgress ? '#2563eb' : '#dc2626';
+        const bgColor = isCompleted ? '#d1fae5' : isInProgress ? '#dbeafe' : '#fee2e2';
+        const emoji = isCompleted ? '✅' : isInProgress ? '⚡' : '📋';
+
         const iconHtml = `
-          <div style="width: 20px; height: 20px; background-color: ${color}; border: 2px solid white; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
+          <div style="display:flex;flex-direction:column;align-items:center;width:34px;height:40px;">
+            <div style="width:34px;height:34px;border-radius:10px;background:${color};border:2px solid white;box-shadow:0 4px 14px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;font-size:15px;">${emoji}</div>
+            <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:8px solid ${color};margin-top:-2px;"></div>
           </div>
         `;
 
         const icon = L.divIcon({
           html: iconHtml,
-          className: 'custom-task-icon',
-          iconSize: [20, 20],
-          iconAnchor: [10, 10],
-          popupAnchor: [0, -10]
+          className: '',
+          iconSize: [34, 40],
+          iconAnchor: [17, 40],
+          popupAnchor: [0, -42]
         });
 
         const marker = L.marker([offsetLat, offsetLng], { icon });
         marker.bindPopup(`
-          <div style="font-family: sans-serif; padding: 4px;">
-            <div style="font-size: 10px; font-weight: bold; color: ${color}; text-transform: uppercase; margin-bottom: 2px;">Task - ${task.status}</div>
-            <h4 style="margin: 0; color: #04122e; font-size: 13px; font-weight: bold;">${task.title}</h4>
+          <div style="font-family:system-ui,sans-serif;padding:8px 4px;min-width:150px;">
+            <div style="font-size:9px;font-weight:900;color:${color};text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">${emoji} Task</div>
+            <div style="font-size:13px;font-weight:900;color:#04122e;margin-bottom:8px;">${task.title}</div>
+            <div style="display:inline-block;padding:2px 9px;font-weight:800;font-size:9px;color:${color};background:${bgColor};border:1.5px solid ${color};text-transform:uppercase;border-radius:20px;">${task.status.replace('_', ' ')}</div>
           </div>
         `);
         layerGroupRef.current.addLayer(marker);
       });
 
-      // Add House Markers - grouped by section, spread in a grid
-      // Group houses by their base lat/lng (section center)
+      // ── HOUSE Markers ──────────────────────────────────────────
       const sectionGroups = new Map<string, typeof houses>();
       houses.forEach(house => {
         if (!house.lat || !house.lng) return;
@@ -252,35 +255,35 @@ export default function LeafletMap({
         const total = group.length;
 
         group.forEach((house, index) => {
-          // Spread houses in a grid: ~0.0008 deg ≈ 80m per cell
           const cols = Math.ceil(Math.sqrt(total));
           const col = index % cols;
           const row = Math.floor(index / cols);
-          // Center the grid around the base point
           const halfCols = (cols - 1) / 2;
           const halfRows = (Math.ceil(total / cols) - 1) / 2;
           const spreadLat = baseLat + (row - halfRows) * 0.00045;
           const spreadLng = baseLng + (col - halfCols) * 0.00045;
 
+          const size = Math.min(5 + (house.voterCount || 1) * 1.2, 13);
+
           const iconHtml = `
-            <div style="width: 10px; height: 10px; background-color: #9333ea; border: 1.5px solid white; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.4);"></div>
+            <div style="width:${size}px;height:${size}px;background:rgba(124,58,237,0.7);border:1.5px solid rgba(139,92,246,1);border-radius:50%;box-shadow:0 1px 5px rgba(124,58,237,0.5);"></div>
           `;
 
           const icon = L.divIcon({
             html: iconHtml,
-            className: 'custom-house-icon',
-            iconSize: [10, 10],
-            iconAnchor: [5, 5],
-            popupAnchor: [0, -5]
+            className: '',
+            iconSize: [size, size],
+            iconAnchor: [size/2, size/2],
+            popupAnchor: [0, -size/2 - 2]
           });
 
           const marker = L.marker([spreadLat, spreadLng], { icon });
           marker.bindPopup(`
-            <div style="font-family: sans-serif; padding: 2px;">
-              <div style="font-size: 9px; font-weight: bold; color: #9333ea; text-transform: uppercase;">Household</div>
-              <h4 style="margin: 2px 0; color: #04122e; font-size: 12px; font-weight: bold;">House #${house.houseNo}</h4>
-              <div style="font-size: 10px; color: #64748b;">${house.voterCount} Voters</div>
-              <div style="font-size: 9px; color: #94a3b8; margin-top: 2px;">${house.section}</div>
+            <div style="font-family:system-ui,sans-serif;padding:6px 4px;min-width:120px;">
+              <div style="font-size:9px;font-weight:900;color:#7c3aed;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;">🏠 Household</div>
+              <div style="font-size:13px;font-weight:800;color:#04122e;margin-bottom:3px;">House #${house.houseNo}</div>
+              <div style="font-size:11px;color:#7c3aed;font-weight:700;">${house.voterCount} voters</div>
+              <div style="font-size:9px;color:#94a3b8;margin-top:2px;">${house.section}</div>
             </div>
           `);
           layerGroupRef.current.addLayer(marker);
