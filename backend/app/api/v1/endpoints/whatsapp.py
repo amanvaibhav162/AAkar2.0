@@ -52,6 +52,7 @@ from app.domain.models.volunteer import Volunteer, Task, ConversationState
 from app.domain.services.ask_election_service import ask_election_question
 import app.domain.services.whatsapp_service as ws_service
 from app.domain.services.whatsapp_service import send_text, download_media
+from app.domain.services import booth_demographics
 
 logger = logging.getLogger(__name__)
 
@@ -622,15 +623,48 @@ async def receive_whatsapp_message(request: Request):
                         )
 
                 else:
-                    # Treat anything else as a question to the LLM
+                    # --- VOLUNTEER ASSISTANT: demographic-aware LLM guidance ---
                     try:
-                        # ask_election_question does synchronous network/DB calls,
-                        # wrap it in to_thread to avoid blocking the event loop.
-                        llm_response = await asyncio.to_thread(ask_election_question, text_body, None, volunteer)
-                        answer = llm_response.get("answer", "I couldn't process your question right now.")
-                        await send_text(from_number, answer)
+                        from app.infrastructure.ai.ollama_client import ollama_client
+
+                        # Determine booth part_number
+                        vol_booth_id = getattr(volunteer, 'booth_id', None) or ''
+
+                        # Compute booth demographics from voter.json
+                        profile = booth_demographics.get_booth_profile(vol_booth_id)
+
+                        # Extract volunteer surname and find caste-matched voters
+                        vol_surname = booth_demographics._extract_surname(volunteer.name or '')
+                        matching_voters = booth_demographics.get_matching_voters(vol_booth_id, vol_surname)
+
+                        # Format the profile text for the prompt
+                        profile_text = booth_demographics.format_profile_for_prompt(
+                            profile, matching_voters, vol_surname
+                        )
+
+                        # Fetch active tasks for this volunteer
+                        vol_tasks = session.exec(
+                            select(Task).where(
+                                Task.volunteer_id == volunteer.id,
+                                Task.status == "assigned"
+                            )
+                        ).all()
+                        tasks_list = [
+                            {"title": t.title, "description": t.description or "", "status": t.status}
+                            for t in vol_tasks
+                        ]
+
+                        # Call the demographic-aware LLM
+                        llm_answer = await asyncio.to_thread(
+                            ollama_client.volunteer_assist,
+                            text_body,
+                            volunteer.name or "Volunteer",
+                            profile_text,
+                            tasks_list
+                        )
+                        await send_text(from_number, llm_answer)
                     except Exception as llm_error:
-                        logger.error(f"Error calling LLM from WhatsApp: {llm_error}", exc_info=True)
+                        logger.error(f"Error calling volunteer LLM: {llm_error}", exc_info=True)
                         await send_text(
                             from_number,
                             "Sorry, I encountered an issue processing your request.",
